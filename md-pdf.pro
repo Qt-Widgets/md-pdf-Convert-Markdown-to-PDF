@@ -1,0 +1,6 @@
+
+TEMPLATE = subdirs
+
+SUBDIRS = md-pdf
+
+OTHER_FILES = LICENSE README.md
