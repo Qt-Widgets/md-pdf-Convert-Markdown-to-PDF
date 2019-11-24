@@ -71,10 +71,10 @@ enum class ItemType {
 //! Base class for item in Markdown document.
 class Item {
 protected:
-	Item();
+	Item() = default;
 
 public:
-	virtual ~Item();
+	virtual ~Item() = default;
 
 	virtual ItemType type() const;
 
@@ -93,7 +93,7 @@ class Heading final
 {
 public:
 	Heading( const QString & text, int level );
-	~Heading() override;
+	~Heading() override = default;
 
 	ItemType type() const override;
 
@@ -120,8 +120,8 @@ class Text final
 	:	public Item
 {
 public:
-	Text();
-	~Text() override;
+	Text() = default;
+	~Text() override = default;
 
 	ItemType type() const override;
 
@@ -162,8 +162,8 @@ class LineBreak final
 	:	public Item
 {
 public:
-	LineBreak();
-	~LineBreak() override;
+	LineBreak() = default;
+	~LineBreak() override = default;
 
 	ItemType type() const override;
 
@@ -181,10 +181,10 @@ class Block
 	:	public Item
 {
 protected:
-	Block();
+	Block() = default;
 
 public:
-	~Block() override;
+	~Block() override = default;
 
 	typedef QVector< QSharedPointer< Item > > Items;
 
@@ -208,8 +208,8 @@ class Paragraph final
 	:	public Block
 {
 public:
-	Paragraph();
-	~Paragraph() override;
+	Paragraph() = default;
+	~Paragraph() override = default;
 
 	ItemType type() const override;
 
@@ -227,8 +227,8 @@ class Blockquote final
 	:	public Block
 {
 public:
-	Blockquote();
-	~Blockquote() override;
+	Blockquote() = default;
+	~Blockquote() override = default;
 
 	ItemType type() const override;
 
@@ -246,8 +246,8 @@ class ListItem final
 	:	public Block
 {
 public:
-	ListItem();
-	~ListItem() override;
+	ListItem() = default;
+	~ListItem() override = default;
 
 	ItemType type() const override;
 
@@ -265,8 +265,8 @@ class OrderedList final
 	:	public Block
 {
 public:
-	OrderedList();
-	~OrderedList() override;
+	OrderedList() = default;
+	~OrderedList() override = default;
 
 	ItemType type() const override;
 
@@ -284,8 +284,8 @@ class UnorderedList final
 	:	public Block
 {
 public:
-	UnorderedList();
-	~UnorderedList() override;
+	UnorderedList() = default;
+	~UnorderedList() override = default;
 
 	ItemType type() const override;
 
@@ -304,7 +304,7 @@ class Link
 {
 public:
 	Link( const QUrl & u, const QString & t );
-	~Link() override;
+	~Link() override = default;
 
 	ItemType type() const override;
 
@@ -332,7 +332,7 @@ class Image final
 {
 public:
 	Image( const QUrl & u, const QString & t );
-	~Image() override;
+	~Image() override = default;
 
 	ItemType type() const override;
 
@@ -351,7 +351,7 @@ class Code final
 {
 public:
 	explicit Code( const QString & t, bool inl = false );
-	~Code() override;
+	~Code() override = default;
 
 	ItemType type() const override;
 

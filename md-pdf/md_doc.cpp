@@ -22,3 +22,271 @@
 
 // md-pdf include
 #include "md_doc.hpp"
+
+
+//
+// Item
+//
+
+ItemType
+Item::type() const
+{
+	return ItemType::Unknown;
+}
+
+
+//
+// Heading
+//
+
+Heading::Heading( const QString & text, int l )
+	:	m_text( text )
+	,	m_level( l )
+{
+}
+
+ItemType
+Heading::type() const
+{
+	return ItemType::Heading;
+}
+
+const QString &
+Heading::text() const
+{
+	return m_text;
+}
+
+void
+Heading::setText( const QString & t )
+{
+	m_text = t;
+}
+
+int
+Heading::level() const
+{
+	return m_level;
+}
+
+void
+Heading::setLevel( int l )
+{
+	m_level = l;
+}
+
+
+//
+// Text
+//
+
+ItemType
+Text::type() const
+{
+	return ItemType::Text;
+}
+
+const Text::TextData &
+Text::data() const
+{
+	return m_data;
+}
+
+void
+Text::setData( const TextData & d )
+{
+	m_data = d;
+}
+
+void
+Text::appendText( const TextWithOptions & t )
+{
+	m_data.append( t );
+}
+
+
+//
+// LineBreak
+//
+
+ItemType
+LineBreak::type() const
+{
+	return ItemType::LineBreak;
+}
+
+
+//
+// Block
+//
+
+const Block::Items &
+Block::items() const
+{
+	return m_items;
+}
+
+void
+Block::setItems( const Items & i )
+{
+	m_items = i;
+}
+
+void
+Block::appendItem( QSharedPointer< Item > i )
+{
+	m_items.append( i );
+}
+
+
+//
+// Paragraph
+//
+
+ItemType
+Paragraph::type() const
+{
+	return ItemType::Paragraph;
+}
+
+
+//
+// Blockquote
+//
+
+ItemType
+Blockquote::type() const
+{
+	return ItemType::Blockquote;
+}
+
+
+//
+// ListItem
+//
+
+ItemType
+ListItem::type() const
+{
+	return ItemType::ListItem;
+}
+
+
+//
+// OrderedList
+//
+
+ItemType
+OrderedList::type() const
+{
+	return ItemType::OrderedList;
+}
+
+
+//
+// UnorderedList
+//
+
+ItemType
+UnorderedList::type() const
+{
+	return ItemType::UnorderedList;
+}
+
+
+//
+// Link
+//
+
+Link::Link( const QUrl & u, const QString & t )
+	:	m_url( u )
+	,	m_text( t )
+{
+}
+
+ItemType
+Link::type() const
+{
+	return ItemType::Link;
+}
+
+const QUrl &
+Link::url() const
+{
+	return m_url;
+}
+
+void
+Link::setUrl( const QUrl & u )
+{
+	m_url = u;
+}
+
+const QString &
+Link::text() const
+{
+	return m_text;
+}
+
+void
+Link::setText( const QString & t )
+{
+	m_text = t;
+}
+
+
+//
+// Image
+//
+
+Image::Image( const QUrl & u, const QString & t )
+	:	Link( u, t )
+{
+}
+
+ItemType
+Image::type() const
+{
+	return ItemType::Image;
+}
+
+
+//
+// Code
+//
+
+Code::Code( const QString & t, bool inl )
+	:	m_text( t )
+	,	m_inlined( inl )
+{
+}
+
+ItemType
+Code::type() const
+{
+	return ItemType::Code;
+}
+
+const QString &
+Code::text() const
+{
+	return m_text;
+}
+
+void
+Code::setText( const QString & t )
+{
+	m_text = t;
+}
+
+bool
+Code::inlined() const
+{
+	return m_inlined;
+}
+
+void
+Code::setInlined( bool on )
+{
+	m_inlined = on;
+}
