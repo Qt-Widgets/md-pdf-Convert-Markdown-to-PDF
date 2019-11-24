@@ -363,6 +363,7 @@ public:
 
 private:
 	QString m_text;
+	bool m_inlined;
 
 	Q_DISABLE_COPY( Code )
 }; // class Code
