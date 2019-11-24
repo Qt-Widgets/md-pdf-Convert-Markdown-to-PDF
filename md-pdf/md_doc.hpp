@@ -31,6 +31,9 @@
 #include <QUrl>
 
 
+namespace MD {
+
+
 //
 // ItemType
 //
@@ -367,5 +370,29 @@ private:
 
 	Q_DISABLE_COPY( Code )
 }; // class Code
+
+
+//
+// Document
+//
+
+//! Document.
+class Document final
+{
+public:
+	Document() = default;
+	~Document() = default;
+
+	typedef QVector< QSharedPointer< Item > > Items;
+
+	const Items & items() const;
+	void setItems( const Items & i );
+	void appendItem( QSharedPointer< Item > i );
+
+private:
+	Items m_items;
+}; // class Document;
+
+} /* namespace MD */
 
 #endif // MD_PDF_MD_DOC_HPP_INCLUDED

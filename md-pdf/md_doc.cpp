@@ -24,6 +24,9 @@
 #include "md_doc.hpp"
 
 
+namespace MD {
+
+
 //
 // Item
 //
@@ -290,3 +293,28 @@ Code::setInlined( bool on )
 {
 	m_inlined = on;
 }
+
+
+//
+// Document
+//
+
+const Document::Items &
+Document::items() const
+{
+	return m_items;
+}
+
+void
+Document::setItems( const Items & i )
+{
+	m_items = i;
+}
+
+void
+Document::appendItem( QSharedPointer< Item > i )
+{
+	m_items.append( i );
+}
+
+} /* namespace MD */

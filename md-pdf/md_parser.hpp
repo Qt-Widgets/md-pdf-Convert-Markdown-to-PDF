@@ -23,4 +23,29 @@
 #ifndef MD_PDF_MD_PARSER_HPP_INCLUDED
 #define MD_PDF_MD_PARSER_HPP_INCLUDED
 
+// md-pdf include.
+#include "md_doc.hpp"
+
+
+namespace MD {
+
+//
+// Parser
+//
+
+//! MD parser.
+class Parser final
+{
+public:
+	Parser() = default;
+	~Parser() = default;
+
+	Document parse( const QString & fileName );
+
+private:
+	Q_DISABLE_COPY( Parser )
+}; // class Parser
+
+} /* namespace MD */
+
 #endif // MD_PDF_MD_PARSER_HPP_INCLUDED

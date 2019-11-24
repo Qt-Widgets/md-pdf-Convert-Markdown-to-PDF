@@ -22,3 +22,18 @@
 
 // md-pdf include
 #include "md_parser.hpp"
+
+
+namespace MD {
+
+//
+// Parser
+//
+
+Document
+Parser::parse( const QString & fileName )
+{
+	return Document();
+}
+
+} /* namespace MD */
