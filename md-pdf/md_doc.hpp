@@ -28,6 +28,7 @@
 #include <QString>
 #include <QFlags>
 #include <QSharedPointer>
+#include <QUrl>
 
 
 //
@@ -43,7 +44,23 @@ enum class ItemType {
 	//! Text.
 	Text = 2,
 	//! Paragraph.
-	Paragraph = 3
+	Paragraph = 3,
+	//! Line break.
+	LineBreak = 4,
+	//! Blockquote.
+	Blockquote = 5,
+	//! List item.
+	ListItem = 6,
+	//! Ordered list.
+	OrderedList = 7,
+	//! Unordered list.
+	UnorderedList = 8,
+	//! Link.
+	Link = 9,
+	//! Image.
+	Image = 10,
+	//! Code.
+	Code = 11
 }; // enum class ItemType
 
 
@@ -137,18 +154,37 @@ Q_DECLARE_OPERATORS_FOR_FLAGS( Text::TextOptions )
 
 
 //
-// Paragraph
+// LineBreak
 //
 
-//! Paragraph.
-class Paragraph final
+//! Line break.
+class LineBreak final
 	:	public Item
 {
 public:
-	Paragraph();
-	~Paragraph() override;
+	LineBreak();
+	~LineBreak() override;
 
 	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( LineBreak )
+}; // class LineBreak
+
+
+//
+// Block
+//
+
+//! Abstract block.
+class Block
+	:	public Item
+{
+protected:
+	Block();
+
+public:
+	~Block() override;
 
 	typedef QVector< QSharedPointer< Item > > Items;
 
@@ -159,8 +195,173 @@ public:
 private:
 	Items m_items;
 
+	Q_DISABLE_COPY( Block )
+}; // class Block
+
+
+//
+// Paragraph
+//
+
+//! Paragraph.
+class Paragraph final
+	:	public Block
+{
+public:
+	Paragraph();
+	~Paragraph() override;
+
+	ItemType type() const override;
+
+private:
 	Q_DISABLE_COPY( Paragraph )
 }; // class Paragraph
 
+
+//
+// Blockquote
+//
+
+//! Blockquote.
+class Blockquote final
+	:	public Block
+{
+public:
+	Blockquote();
+	~Blockquote() override;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( Blockquote )
+}; // class Blockquote
+
+
+//
+// ListItem
+//
+
+//! List item.
+class ListItem final
+	:	public Block
+{
+public:
+	ListItem();
+	~ListItem() override;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( ListItem )
+}; // class ListItem
+
+
+//
+// OrderedList
+//
+
+//! Ordered list.
+class OrderedList final
+	:	public Block
+{
+public:
+	OrderedList();
+	~OrderedList() override;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( OrderedList )
+}; // class OrderedList
+
+
+//
+// UnorderedList
+//
+
+//! Unordered list.
+class UnorderedList final
+	:	public Block
+{
+public:
+	UnorderedList();
+	~UnorderedList() override;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( UnorderedList )
+}; // class UnorderedList
+
+
+//
+// Link
+//
+
+//! Link.
+class Link
+	:	public Item
+{
+public:
+	Link( const QUrl & u, const QString & t );
+	~Link() override;
+
+	ItemType type() const override;
+
+	const QUrl & url() const;
+	void setUrl( const QUrl & u );
+
+	const QString & text() const;
+	void setText( const QString & t );
+
+private:
+	QUrl m_url;
+	QString m_text;
+
+	Q_DISABLE_COPY( Link )
+}; // class Link
+
+
+//
+// Image
+//
+
+//! Image.
+class Image final
+	:	public Link
+{
+public:
+	Image( const QUrl & u, const QString & t );
+	~Image() override;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( Image )
+}; // class Image
+
+
+//
+// Code
+//
+
+//! Code.
+class Code final
+	:	public Item
+{
+public:
+	explicit Code( const QString & t );
+	~Code() override;
+
+	ItemType type() const override;
+
+	const QString & text() const;
+	void setText( const QString & t );
+
+private:
+	QString m_text;
+
+	Q_DISABLE_COPY( Code )
+}; // class Code
 
 #endif // MD_PDF_MD_DOC_HPP_INCLUDED
