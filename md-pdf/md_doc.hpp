@@ -350,13 +350,16 @@ class Code final
 	:	public Item
 {
 public:
-	explicit Code( const QString & t );
+	explicit Code( const QString & t, bool inl = false );
 	~Code() override;
 
 	ItemType type() const override;
 
 	const QString & text() const;
 	void setText( const QString & t );
+
+	bool inlined() const;
+	void setInlined( bool on = true );
 
 private:
 	QString m_text;
