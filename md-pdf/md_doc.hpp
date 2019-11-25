@@ -29,6 +29,7 @@
 #include <QFlags>
 #include <QSharedPointer>
 #include <QUrl>
+#include <QMap>
 
 
 namespace MD {
@@ -63,7 +64,17 @@ enum class ItemType {
 	//! Image.
 	Image = 10,
 	//! Code.
-	Code = 11
+	Code = 11,
+	//! Table cell.
+	TableCell = 12,
+	//! Table row.
+	TableRow = 13,
+	//! Table.
+	Table = 14,
+	//! Footnote ref.
+	FootnoteRef = 15,
+	//! Footnote.
+	Footnote = 16
 }; // enum class ItemType
 
 
@@ -135,7 +146,9 @@ public:
 		//! Bold text.
 		BoldText = 1,
 		//! Italic text.
-		ItalicText = 2
+		ItalicText = 2,
+		//! Strikethrough.
+		StrikethroughText = 4
 	}; // enum TextOption
 
 	Q_DECLARE_FLAGS( TextOptions, TextOption )
@@ -373,6 +386,127 @@ private:
 
 
 //
+// TableCell
+//
+
+//! Table cell.
+class TableCell final
+	:	public Item
+{
+public:
+	explicit TableCell( const QString & t );
+	~TableCell() override = default;
+
+	ItemType type() const override;
+
+	const QString & text() const;
+	void setText( const QString & t );
+
+private:
+	QString m_text;
+
+	Q_DISABLE_COPY( TableCell )
+}; // class TableCell
+
+
+//
+// TableRow
+//
+
+//! Table row.
+class TableRow final
+	:	public Item
+{
+public:
+	TableRow() = default;
+	~TableRow() override = default;
+
+	ItemType type() const override;
+
+	typedef QVector< QSharedPointer< TableCell > > Cells;
+
+	const Cells & cells() const;
+	void setCells( const Cells & c );
+	void appendCell( QSharedPointer< TableCell > c );
+
+private:
+	Cells m_cells;
+
+	Q_DISABLE_COPY( TableRow )
+}; // class TableRow
+
+
+//
+// Table
+//
+
+//! Table.
+class Table final
+	:	public Item
+{
+public:
+	Table() = default;
+	~Table() override = default;
+
+	ItemType type() const override;
+
+	typedef QVector< QSharedPointer< TableRow > > Rows;
+
+	const Rows & rows() const;
+	void setRows( const Rows & r );
+	void appendRow( QSharedPointer< TableRow > r );
+
+private:
+	Rows m_rows;
+
+	Q_DISABLE_COPY( Table )
+}; // class Table
+
+
+//
+// FootnoteRef
+//
+
+//! Footnote ref.
+class FootnoteRef final
+	:	public Item
+{
+public:
+	explicit FootnoteRef( const QString & i );
+	~FootnoteRef() override = default;
+
+	ItemType type() const override;
+
+	const QString & id() const;
+	void setId( const QString & i );
+
+private:
+	QString m_id;
+
+	Q_DISABLE_COPY( FootnoteRef )
+}; // class FootnoteRef
+
+
+//
+// Footnote
+//
+
+//! Footnote.
+class Footnote final
+	:	public Block
+{
+public:
+	Footnote() = default;
+	~Footnote() override = default;
+
+	ItemType type() const override;
+
+private:
+	Q_DISABLE_COPY( Footnote )
+}; // class Footnote
+
+
+//
 // Document
 //
 
@@ -391,8 +525,14 @@ public:
 
 	bool isEmpty() const;
 
+	typedef QMap< QString, QSharedPointer< Footnote > > Footnotes;
+
+	const Footnotes & footnotesMap() const;
+	void insertFootnote( const QString & id, QSharedPointer< Footnote > fn );
+
 private:
 	Items m_items;
+	Footnotes m_footnotes;
 }; // class Document;
 
 } /* namespace MD */

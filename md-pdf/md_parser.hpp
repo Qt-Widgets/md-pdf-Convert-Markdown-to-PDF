@@ -69,8 +69,8 @@ private:
 		const QString & workingPath );
 	void parseList( const QStringList & fr, Document & doc, QStringList & linksToParse,
 		const QString & workingPath );
-	void parseCode( const QStringList & fr, Document & doc );
-	void parseCodeIndentedBySpaces( const QStringList & fr, Document & doc );
+	void parseCode( const QStringList & fr, Document & doc, int indent = 0 );
+	void parseCodeIndentedBySpaces( const QStringList & fr, Document & doc, int indent = 4 );
 
 private:
 	QStringList m_parsedFiles;

@@ -93,6 +93,7 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 	BlockType type = BlockType::Unknown;
 	bool emptyLineInList = false;
 
+	// Parse fragment and clear internal cache.
 	auto pf = [&]()
 		{
 			parseFragment( fragment, doc, linksToParse, workingPath );
@@ -100,6 +101,31 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 			type = BlockType::Unknown;
 		};
 
+	// Eat footnote.
+	auto eatFootnote = [&]()
+		{
+			while( !stream.atEnd() )
+			{
+				auto line = stream.readLine();
+
+				if( line.isEmpty() || line.startsWith( QLatin1String( "    " ) ) ||
+					line.startsWith( QLatin1Char( '\t' ) ) )
+				{
+					fragment.append( line );
+				}
+				else
+				{
+					pf();
+
+					type = whatIsTheLine( line );
+					fragment.append( line );
+
+					break;
+				}
+			}
+		};
+
+	static const QRegExp footnoteRegExp( QLatin1String( "\\s*\\[[^\\s]*\\]:.*" ) );
 
 	while( !stream.atEnd() )
 	{
@@ -108,6 +134,7 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 
 		BlockType lineType = whatIsTheLine( line, emptyLineInList );
 
+		// First line of the fragment.
 		if( !simplified.isEmpty() && type == BlockType::Unknown )
 		{
 			type = lineType;
@@ -117,11 +144,21 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 			continue;
 		}
 
+		// Got new empty line.
 		if( simplified.isEmpty() )
 		{
 			switch( type )
 			{
 				case BlockType::Text :
+				{
+					if( footnoteRegExp.exactMatch( fragment.first() ) )
+						eatFootnote();
+					else
+						pf();
+
+					continue;
+				}
+
 				case BlockType::Blockquote :
 				{
 					pf();
@@ -160,6 +197,7 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 					break;
 			}
 		}
+		//! Empty new line in list.
 		else if( emptyLineInList )
 		{
 			if( line.startsWith( QLatin1String( "    " ) ) ||
@@ -180,18 +218,22 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 			}
 		}
 
+		// Something new and this is not a code block.
 		if( type != lineType && type != BlockType::Code )
 		{
 			pf();
 			type = lineType;
 			fragment.append( line );
 		}
+		// End of code block.
 		else if( type == BlockType::Code && type == lineType )
 		{
 			fragment.append( line );
 
 			pf();
 		}
+		else
+			fragment.append( line );
 	}
 
 	if( !fragment.isEmpty() )
@@ -223,8 +265,11 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 			}
 			else if( s.startsWith( QLatin1Char( '>' ) ) )
 				return BlockType::Blockquote;
-			else if( s.startsWith( QLatin1String( "```" ) ) )
+			else if( s.startsWith( QLatin1String( "```" ) ) ||
+				s.startsWith( QLatin1String( "~~~" ) ) )
+			{
 				return BlockType::Code;
+			}
 			else if( s.isEmpty() )
 				return BlockType::Unknown;
 			else
@@ -247,8 +292,11 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 		}
 		else if( s.startsWith( QLatin1Char( '>' ) ) )
 			return BlockType::Blockquote;
-		else if( s.startsWith( QLatin1String( "```" ) ) )
+		else if( s.startsWith( QLatin1String( "```" ) ) ||
+			s.startsWith( QLatin1String( "~~~" ) ) )
+		{
 			return BlockType::Code;
+		}
 		else if( s.isEmpty() )
 			return BlockType::Unknown;
 		else
@@ -275,7 +323,14 @@ Parser::parseFragment( const QStringList & fr, Document & doc, QStringList & lin
 			break;
 
 		case BlockType::CodeIndentedBySpaces :
-			parseCodeIndentedBySpaces( fr, doc );
+		{
+			int indent = 1;
+
+			if( fr.first().startsWith( QLatin1String( "    " ) ) )
+				indent = 4;
+
+			parseCodeIndentedBySpaces( fr, doc, indent );
+		}
 			break;
 
 		case BlockType::List :
@@ -315,15 +370,25 @@ Parser::parseList( const QStringList & fr, Document & doc, QStringList & linksTo
 }
 
 void
-Parser::parseCode( const QStringList & fr, Document & doc )
+Parser::parseCode( const QStringList & fr, Document & doc, int indent )
 {
+	auto tmp = fr;
+	tmp.removeFirst();
+	tmp.removeLast();
 
+	parseCodeIndentedBySpaces( tmp, doc, indent );
 }
 
 void
-Parser::parseCodeIndentedBySpaces( const QStringList & fr, Document & doc )
+Parser::parseCodeIndentedBySpaces( const QStringList & fr, Document & doc, int indent )
 {
+	QString code;
 
+	for( const auto & l : fr )
+		code.append( ( indent > 0 ? l.right( l.length() - indent ) + QLatin1Char( '\n' ) :
+			l + QLatin1Char( '\n' ) ) );
+
+	doc.appendItem( QSharedPointer< Item > ( new Code( code ) ) );
 }
 
 } /* namespace MD */

@@ -296,6 +296,131 @@ Code::setInlined( bool on )
 
 
 //
+// TableCell
+//
+
+TableCell::TableCell( const QString & t )
+	:	m_text( t )
+{
+}
+
+ItemType
+TableCell::type() const
+{
+	return ItemType::TableCell;
+}
+
+const QString &
+TableCell::text() const
+{
+	return m_text;
+}
+
+void
+TableCell::setText( const QString & t )
+{
+	m_text = t;
+}
+
+
+//
+// TableRow
+//
+
+ItemType
+TableRow::type() const
+{
+	return ItemType::TableRow;
+}
+
+const TableRow::Cells &
+TableRow::cells() const
+{
+	return m_cells;
+}
+
+void
+TableRow::setCells( const Cells & c )
+{
+	m_cells = c;
+}
+
+void
+TableRow::appendCell( QSharedPointer< TableCell > c )
+{
+	m_cells.append( c );
+}
+
+
+//
+// Table
+//
+
+ItemType
+Table::type() const
+{
+	return ItemType::Table;
+}
+
+const Table::Rows &
+Table::rows() const
+{
+	return m_rows;
+}
+
+void
+Table::setRows( const Rows & r )
+{
+	m_rows = r;
+}
+
+void
+Table::appendRow( QSharedPointer< TableRow > r )
+{
+	m_rows.append( r );
+}
+
+
+//
+// FootnoteRef
+//
+
+FootnoteRef::FootnoteRef( const QString & i )
+	:	m_id( i )
+{
+}
+
+ItemType
+FootnoteRef::type() const
+{
+	return ItemType::FootnoteRef;
+}
+
+const QString &
+FootnoteRef::id() const
+{
+	return m_id;
+}
+
+void
+FootnoteRef::setId( const QString & i )
+{
+	m_id = i;
+}
+
+
+//
+// Footnote
+//
+
+ItemType
+Footnote::type() const
+{
+	return ItemType::Footnote;
+}
+
+
+//
 // Document
 //
 
@@ -321,6 +446,18 @@ bool
 Document::isEmpty() const
 {
 	return m_items.isEmpty();
+}
+
+const Document::Footnotes &
+Document::footnotesMap() const
+{
+	return m_footnotes;
+}
+
+void
+Document::insertFootnote( const QString & id, QSharedPointer< Footnote > fn )
+{
+	m_footnotes.insert( id, fn );
 }
 
 } /* namespace MD */
