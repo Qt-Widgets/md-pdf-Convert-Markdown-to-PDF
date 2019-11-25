@@ -214,6 +214,9 @@ Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksTo
 			{
 				pf();
 
+				type = lineType;
+				fragment.append( line );
+
 				continue;
 			}
 		}
@@ -275,6 +278,8 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 			else
 				return BlockType::Text;
 		}
+		else
+			return BlockType::Text;
 	}
 	else
 	{
