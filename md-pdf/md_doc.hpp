@@ -389,6 +389,8 @@ public:
 	void setItems( const Items & i );
 	void appendItem( QSharedPointer< Item > i );
 
+	bool isEmpty() const;
+
 private:
 	Items m_items;
 }; // class Document;

@@ -317,4 +317,10 @@ Document::appendItem( QSharedPointer< Item > i )
 	m_items.append( i );
 }
 
+bool
+Document::isEmpty() const
+{
+	return m_items.isEmpty();
+}
+
 } /* namespace MD */

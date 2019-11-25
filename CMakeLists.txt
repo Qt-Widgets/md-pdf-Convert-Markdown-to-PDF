@@ -23,3 +23,7 @@ ExternalProject_Add(
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/podofo )
 
 add_subdirectory( md-pdf )
+
+enable_testing()
+
+add_subdirectory( tests )

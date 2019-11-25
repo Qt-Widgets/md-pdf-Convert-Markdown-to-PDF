@@ -26,6 +26,9 @@
 // md-pdf include.
 #include "md_doc.hpp"
 
+// Qt include.
+#include <QTextStream>
+
 
 namespace MD {
 
@@ -40,9 +43,38 @@ public:
 	Parser() = default;
 	~Parser() = default;
 
-	Document parse( const QString & fileName );
+	Document parse( const QString & fileName, bool recursive = true );
 
 private:
+	void parseFile( const QString & fileName, bool recursive, Document & doc );
+	void parseStream( QTextStream & stream, Document & doc, QStringList & linksToParse,
+		const QString & workingPath );
+	void clearCache();
+
+	enum class BlockType {
+		Unknown,
+		Text,
+		List,
+		CodeIndentedBySpaces,
+		Code,
+		Blockquote
+	}; // enum BlockType
+
+	BlockType whatIsTheLine( const QString & str, bool inList = false ) const;
+	void parseFragment( const QStringList & fr, Document & doc, QStringList & linksToParse,
+		const QString & workingPath );
+	void parseText( const QStringList & fr, Document & doc, QStringList & linksToParse,
+		const QString & workingPath );
+	void parseBlockquote( const QStringList & fr, Document & doc, QStringList & linksToParse,
+		const QString & workingPath );
+	void parseList( const QStringList & fr, Document & doc, QStringList & linksToParse,
+		const QString & workingPath );
+	void parseCode( const QStringList & fr, Document & doc );
+	void parseCodeIndentedBySpaces( const QStringList & fr, Document & doc );
+
+private:
+	QStringList m_parsedFiles;
+
 	Q_DISABLE_COPY( Parser )
 }; // class Parser
 

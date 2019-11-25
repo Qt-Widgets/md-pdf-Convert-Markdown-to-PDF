@@ -20,20 +20,8 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// md-pdf include.
-#include "md_parser.hpp"
 
-// Qt include.
-#include <QString>
-#include <QApplication>
-
-int main( int argc, char ** argv )
+int main( int, char ** )
 {
-	QApplication app( argc, argv );
-
-	MD::Parser parser;
-
-	auto doc = parser.parse( "" );
-
 	return 0;
 }
