@@ -424,30 +424,6 @@ Footnote::type() const
 // Document
 //
 
-const Document::Items &
-Document::items() const
-{
-	return m_items;
-}
-
-void
-Document::setItems( const Items & i )
-{
-	m_items = i;
-}
-
-void
-Document::appendItem( QSharedPointer< Item > i )
-{
-	m_items.append( i );
-}
-
-bool
-Document::isEmpty() const
-{
-	return m_items.isEmpty();
-}
-
 const Document::Footnotes &
 Document::footnotesMap() const
 {

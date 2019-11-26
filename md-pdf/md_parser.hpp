@@ -43,12 +43,10 @@ public:
 	Parser() = default;
 	~Parser() = default;
 
-	Document parse( const QString & fileName, bool recursive = true );
+	QSharedPointer< Document > parse( const QString & fileName, bool recursive = true );
 
 private:
-	void parseFile( const QString & fileName, bool recursive, Document & doc );
-	void parseStream( QTextStream & stream, Document & doc, QStringList & linksToParse,
-		const QString & workingPath );
+	void parseFile( const QString & fileName, bool recursive, QSharedPointer< Block > doc );
 	void clearCache();
 
 	enum class BlockType {
@@ -61,16 +59,192 @@ private:
 	}; // enum BlockType
 
 	BlockType whatIsTheLine( const QString & str, bool inList = false ) const;
-	void parseFragment( const QStringList & fr, Document & doc, QStringList & linksToParse,
-		const QString & workingPath );
-	void parseText( const QStringList & fr, Document & doc, QStringList & linksToParse,
-		const QString & workingPath );
-	void parseBlockquote( const QStringList & fr, Document & doc, QStringList & linksToParse,
-		const QString & workingPath );
-	void parseList( const QStringList & fr, Document & doc, QStringList & linksToParse,
-		const QString & workingPath );
-	void parseCode( const QStringList & fr, Document & doc, int indent = 0 );
-	void parseCodeIndentedBySpaces( const QStringList & fr, Document & doc, int indent = 4 );
+	void parseFragment( const QStringList & fr, QSharedPointer< Block > parent,
+		QStringList & linksToParse, const QString & workingPath );
+	void parseText( const QStringList & fr, QSharedPointer< Block > parent,
+		QStringList & linksToParse, const QString & workingPath );
+	void parseBlockquote( const QStringList & fr, QSharedPointer< Block > parent,
+		QStringList & linksToParse, const QString & workingPath );
+	void parseList( const QStringList & fr, QSharedPointer< Block > parent,
+		QStringList & linksToParse, const QString & workingPath );
+	void parseCode( const QStringList & fr, QSharedPointer< Block > parent, int indent = 0 );
+	void parseCodeIndentedBySpaces( const QStringList & fr, QSharedPointer< Block > parent,
+		int indent = 4 );
+	template< typename STREAM >
+	void parse( STREAM & stream, QSharedPointer< Block > parent, QStringList & linksToParse,
+		const QString & workingPath )
+	{
+		QStringList fragment;
+
+		BlockType type = BlockType::Unknown;
+		bool emptyLineInList = false;
+
+		// Parse fragment and clear internal cache.
+		auto pf = [&]()
+			{
+				parseFragment( fragment, parent, linksToParse, workingPath );
+				fragment.clear();
+				type = BlockType::Unknown;
+			};
+
+		// Eat footnote.
+		auto eatFootnote = [&]()
+			{
+				while( !stream.atEnd() )
+				{
+					auto line = stream.readLine();
+
+					if( line.isEmpty() || line.startsWith( QLatin1String( "    " ) ) ||
+						line.startsWith( QLatin1Char( '\t' ) ) )
+					{
+						fragment.append( line );
+					}
+					else
+					{
+						pf();
+
+						type = whatIsTheLine( line );
+						fragment.append( line );
+
+						break;
+					}
+				}
+			};
+
+		static const QRegExp footnoteRegExp( QLatin1String( "\\s*\\[[^\\s]*\\]:.*" ) );
+
+		while( !stream.atEnd() )
+		{
+			auto line = stream.readLine();
+			auto simplified = line.simplified();
+
+			BlockType lineType = whatIsTheLine( line, emptyLineInList );
+
+			// First line of the fragment.
+			if( !simplified.isEmpty() && type == BlockType::Unknown )
+			{
+				type = lineType;
+
+				fragment.append( line );
+
+				continue;
+			}
+
+			// Got new empty line.
+			if( simplified.isEmpty() )
+			{
+				switch( type )
+				{
+					case BlockType::Text :
+					{
+						if( footnoteRegExp.exactMatch( fragment.first() ) )
+							eatFootnote();
+						else
+							pf();
+
+						continue;
+					}
+
+					case BlockType::Blockquote :
+					{
+						pf();
+
+						continue;
+					}
+
+					case BlockType::CodeIndentedBySpaces :
+					{
+						if( line.startsWith( QLatin1String( "    " ) ) ||
+							line.startsWith( QLatin1Char( '\t' ) ) )
+						{
+							fragment.append( line );
+						}
+						else
+							pf();
+
+						continue;
+					}
+
+					case BlockType::Code :
+					{
+						fragment.append( line );
+
+						continue;
+					}
+
+					case BlockType::List :
+					{
+						emptyLineInList = true;
+
+						continue;
+					}
+
+					default :
+						break;
+				}
+			}
+			//! Empty new line in list.
+			else if( emptyLineInList )
+			{
+				if( line.startsWith( QLatin1String( "    " ) ) ||
+					line.startsWith( QLatin1Char( '\t' ) )  ||
+					lineType == BlockType::List )
+				{
+					fragment.append( line );
+
+					emptyLineInList = false;
+
+					continue;
+				}
+				else
+				{
+					pf();
+
+					type = lineType;
+					fragment.append( line );
+
+					continue;
+				}
+			}
+
+			// Something new and this is not a code block.
+			if( type != lineType && type != BlockType::Code )
+			{
+				pf();
+				type = lineType;
+				fragment.append( line );
+			}
+			// End of code block.
+			else if( type == BlockType::Code && type == lineType )
+			{
+				fragment.append( line );
+
+				pf();
+			}
+			else
+				fragment.append( line );
+		}
+
+		if( !fragment.isEmpty() )
+			pf();
+	}
+
+	class StringListStream final
+	{
+	public:
+		StringListStream( QStringList & stream )
+			:	m_stream( stream )
+			,	m_pos( 0 )
+		{
+		}
+
+		bool atEnd() const { return ( m_stream.size() > m_pos ); }
+		QString readLine() { return m_stream.at( m_pos++ ); }
+
+	private:
+		QStringList & m_stream;
+		int m_pos;
+	}; // class StringListStream
 
 private:
 	QStringList m_parsedFiles;

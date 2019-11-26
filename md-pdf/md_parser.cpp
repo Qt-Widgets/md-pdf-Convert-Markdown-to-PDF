@@ -36,10 +36,10 @@ namespace MD {
 // Parser
 //
 
-Document
+QSharedPointer< Document >
 Parser::parse( const QString & fileName, bool recursive )
 {
-	Document doc;
+	QSharedPointer< Document > doc( new Document );
 
 	parseFile( fileName, recursive, doc );
 
@@ -49,7 +49,7 @@ Parser::parse( const QString & fileName, bool recursive )
 }
 
 void
-Parser::parseFile( const QString & fileName, bool recursive, Document & doc )
+Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Block > doc )
 {
 	QFileInfo fi( fileName );
 
@@ -63,7 +63,7 @@ Parser::parseFile( const QString & fileName, bool recursive, Document & doc )
 
 			QTextStream s( &f );
 
-			parseStream( s, doc, linksToParse, fi.filePath() + QDir::separator() );
+			parse( s, doc, linksToParse, fi.filePath() + QDir::separator() );
 
 			f.close();
 
@@ -82,165 +82,6 @@ Parser::parseFile( const QString & fileName, bool recursive, Document & doc )
 			}
 		}
 	}
-}
-
-void
-Parser::parseStream( QTextStream & stream, Document & doc, QStringList & linksToParse,
-	const QString & workingPath )
-{
-	QStringList fragment;
-
-	BlockType type = BlockType::Unknown;
-	bool emptyLineInList = false;
-
-	// Parse fragment and clear internal cache.
-	auto pf = [&]()
-		{
-			parseFragment( fragment, doc, linksToParse, workingPath );
-			fragment.clear();
-			type = BlockType::Unknown;
-		};
-
-	// Eat footnote.
-	auto eatFootnote = [&]()
-		{
-			while( !stream.atEnd() )
-			{
-				auto line = stream.readLine();
-
-				if( line.isEmpty() || line.startsWith( QLatin1String( "    " ) ) ||
-					line.startsWith( QLatin1Char( '\t' ) ) )
-				{
-					fragment.append( line );
-				}
-				else
-				{
-					pf();
-
-					type = whatIsTheLine( line );
-					fragment.append( line );
-
-					break;
-				}
-			}
-		};
-
-	static const QRegExp footnoteRegExp( QLatin1String( "\\s*\\[[^\\s]*\\]:.*" ) );
-
-	while( !stream.atEnd() )
-	{
-		auto line = stream.readLine();
-		auto simplified = line.simplified();
-
-		BlockType lineType = whatIsTheLine( line, emptyLineInList );
-
-		// First line of the fragment.
-		if( !simplified.isEmpty() && type == BlockType::Unknown )
-		{
-			type = lineType;
-
-			fragment.append( line );
-
-			continue;
-		}
-
-		// Got new empty line.
-		if( simplified.isEmpty() )
-		{
-			switch( type )
-			{
-				case BlockType::Text :
-				{
-					if( footnoteRegExp.exactMatch( fragment.first() ) )
-						eatFootnote();
-					else
-						pf();
-
-					continue;
-				}
-
-				case BlockType::Blockquote :
-				{
-					pf();
-
-					continue;
-				}
-
-				case BlockType::CodeIndentedBySpaces :
-				{
-					if( line.startsWith( QLatin1String( "    " ) ) ||
-						line.startsWith( QLatin1Char( '\t' ) ) )
-					{
-						fragment.append( line );
-					}
-					else
-						pf();
-
-					continue;
-				}
-
-				case BlockType::Code :
-				{
-					fragment.append( line );
-
-					continue;
-				}
-
-				case BlockType::List :
-				{
-					emptyLineInList = true;
-
-					continue;
-				}
-
-				default :
-					break;
-			}
-		}
-		//! Empty new line in list.
-		else if( emptyLineInList )
-		{
-			if( line.startsWith( QLatin1String( "    " ) ) ||
-				line.startsWith( QLatin1Char( '\t' ) )  ||
-				lineType == BlockType::List )
-			{
-				fragment.append( line );
-
-				emptyLineInList = false;
-
-				continue;
-			}
-			else
-			{
-				pf();
-
-				type = lineType;
-				fragment.append( line );
-
-				continue;
-			}
-		}
-
-		// Something new and this is not a code block.
-		if( type != lineType && type != BlockType::Code )
-		{
-			pf();
-			type = lineType;
-			fragment.append( line );
-		}
-		// End of code block.
-		else if( type == BlockType::Code && type == lineType )
-		{
-			fragment.append( line );
-
-			pf();
-		}
-		else
-			fragment.append( line );
-	}
-
-	if( !fragment.isEmpty() )
-		pf();
 }
 
 Parser::BlockType
@@ -310,21 +151,21 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 }
 
 void
-Parser::parseFragment( const QStringList & fr, Document & doc, QStringList & linksToParse,
-	const QString & workingPath )
+Parser::parseFragment( const QStringList & fr, QSharedPointer< Block > parent,
+	QStringList & linksToParse, const QString & workingPath )
 {
 	switch( whatIsTheLine( fr.first() ) )
 	{
 		case BlockType::Text :
-			parseText( fr, doc, linksToParse, workingPath );
+			parseText( fr, parent, linksToParse, workingPath );
 			break;
 
 		case BlockType::Blockquote :
-			parseBlockquote( fr, doc, linksToParse, workingPath );
+			parseBlockquote( fr, parent, linksToParse, workingPath );
 			break;
 
 		case BlockType::Code :
-			parseCode( fr, doc );
+			parseCode( fr, parent );
 			break;
 
 		case BlockType::CodeIndentedBySpaces :
@@ -334,12 +175,12 @@ Parser::parseFragment( const QStringList & fr, Document & doc, QStringList & lin
 			if( fr.first().startsWith( QLatin1String( "    " ) ) )
 				indent = 4;
 
-			parseCodeIndentedBySpaces( fr, doc, indent );
+			parseCodeIndentedBySpaces( fr, parent, indent );
 		}
 			break;
 
 		case BlockType::List :
-			parseList( fr, doc, linksToParse, workingPath );
+			parseList( fr, parent, linksToParse, workingPath );
 			break;
 
 		default :
@@ -354,38 +195,52 @@ Parser::clearCache()
 }
 
 void
-Parser::parseText( const QStringList & fr, Document & doc, QStringList & linksToParse,
-	const QString & workingPath )
+Parser::parseText( const QStringList & fr, QSharedPointer< Block > parent,
+	QStringList & linksToParse, const QString & workingPath )
 {
 
 }
 
 void
-Parser::parseBlockquote( const QStringList & fr, Document & doc, QStringList & linksToParse,
-	const QString & workingPath )
+Parser::parseBlockquote( const QStringList & fr, QSharedPointer< Block > parent,
+	QStringList & linksToParse, const QString & workingPath )
+{
+	QSharedPointer< Blockquote > bq( new Blockquote() );
+
+	const int indent = fr.first().indexOf( QLatin1Char( '>' ) );
+
+	QStringList data = fr;
+	StringListStream stream( data );
+
+	if( indent > -1 )
+	{
+		for( auto it = data.begin(), last = data.end(); it != last; ++it )
+			*it = it->right( it->length() - indent - 1 );
+
+		parse( stream, bq, linksToParse, workingPath );
+	}
+}
+
+void
+Parser::parseList( const QStringList & fr, QSharedPointer< Block > parent,
+	QStringList & linksToParse, const QString & workingPath )
 {
 
 }
 
 void
-Parser::parseList( const QStringList & fr, Document & doc, QStringList & linksToParse,
-	const QString & workingPath )
-{
-
-}
-
-void
-Parser::parseCode( const QStringList & fr, Document & doc, int indent )
+Parser::parseCode( const QStringList & fr, QSharedPointer< Block > parent, int indent )
 {
 	auto tmp = fr;
 	tmp.removeFirst();
 	tmp.removeLast();
 
-	parseCodeIndentedBySpaces( tmp, doc, indent );
+	parseCodeIndentedBySpaces( tmp, parent, indent );
 }
 
 void
-Parser::parseCodeIndentedBySpaces( const QStringList & fr, Document & doc, int indent )
+Parser::parseCodeIndentedBySpaces( const QStringList & fr, QSharedPointer< Block > parent,
+	int indent )
 {
 	QString code;
 
@@ -393,7 +248,7 @@ Parser::parseCodeIndentedBySpaces( const QStringList & fr, Document & doc, int i
 		code.append( ( indent > 0 ? l.right( l.length() - indent ) + QLatin1Char( '\n' ) :
 			l + QLatin1Char( '\n' ) ) );
 
-	doc.appendItem( QSharedPointer< Item > ( new Code( code ) ) );
+	parent->appendItem( QSharedPointer< Item > ( new Code( code ) ) );
 }
 
 } /* namespace MD */

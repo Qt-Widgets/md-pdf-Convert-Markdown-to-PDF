@@ -74,7 +74,9 @@ enum class ItemType {
 	//! Footnote ref.
 	FootnoteRef = 15,
 	//! Footnote.
-	Footnote = 16
+	Footnote = 16,
+	//! Document.
+	Document = 17
 }; // enum class ItemType
 
 
@@ -512,18 +514,11 @@ private:
 
 //! Document.
 class Document final
+	:	public Block
 {
 public:
 	Document() = default;
 	~Document() = default;
-
-	typedef QVector< QSharedPointer< Item > > Items;
-
-	const Items & items() const;
-	void setItems( const Items & i );
-	void appendItem( QSharedPointer< Item > i );
-
-	bool isEmpty() const;
 
 	typedef QMap< QString, QSharedPointer< Footnote > > Footnotes;
 
@@ -531,8 +526,9 @@ public:
 	void insertFootnote( const QString & id, QSharedPointer< Footnote > fn );
 
 private:
-	Items m_items;
 	Footnotes m_footnotes;
+
+	Q_DISABLE_COPY( Document )
 }; // class Document;
 
 } /* namespace MD */
