@@ -151,7 +151,7 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 }
 
 void
-Parser::parseFragment( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseFragment( QStringList & fr, QSharedPointer< Block > parent,
 	QStringList & linksToParse, const QString & workingPath )
 {
 	switch( whatIsTheLine( fr.first() ) )
@@ -195,26 +195,25 @@ Parser::clearCache()
 }
 
 void
-Parser::parseText( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 	QStringList & linksToParse, const QString & workingPath )
 {
 
 }
 
 void
-Parser::parseBlockquote( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
 	QStringList & linksToParse, const QString & workingPath )
 {
 	QSharedPointer< Blockquote > bq( new Blockquote() );
 
 	const int indent = fr.first().indexOf( QLatin1Char( '>' ) );
 
-	QStringList data = fr;
-	StringListStream stream( data );
+	StringListStream stream( fr );
 
 	if( indent > -1 )
 	{
-		for( auto it = data.begin(), last = data.end(); it != last; ++it )
+		for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
 			*it = it->right( it->length() - indent - 1 );
 
 		parse( stream, bq, linksToParse, workingPath );
@@ -222,12 +221,10 @@ Parser::parseBlockquote( const QStringList & fr, QSharedPointer< Block > parent,
 }
 
 void
-Parser::parseList( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
 	QStringList & linksToParse, const QString & workingPath )
 {
-	QStringList data = fr;
-
-	for( auto it = data.begin(), last  = data.end(); it != last; ++it )
+	for( auto it = fr.begin(), last  = fr.end(); it != last; ++it )
 		it->replace( QLatin1Char( '\t' ), QLatin1String( "    " ) );
 
 	static const QRegExp space( QLatin1String( "[^\\s]+" ) );
@@ -240,7 +237,7 @@ Parser::parseList( const QStringList & fr, QSharedPointer< Block > parent,
 		QSharedPointer< List > list( new List() );
 
 		QStringList listItem;
-		auto it = data.begin();
+		auto it = fr.begin();
 
 		*it = it->right( it->length() - indent );
 
@@ -248,7 +245,7 @@ Parser::parseList( const QStringList & fr, QSharedPointer< Block > parent,
 
 		++it;
 
-		for( auto last = data.end(); it != last; ++it )
+		for( auto last = fr.end(); it != last; ++it )
 		{
 			int s = space.indexIn( *it );
 			s = ( s > indent ? indent : s );
@@ -275,7 +272,7 @@ Parser::parseList( const QStringList & fr, QSharedPointer< Block > parent,
 }
 
 void
-Parser::parseListItem( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 	QStringList & linksToParse, const QString & workingPath )
 {
 	static const QRegExp unorderedRegExp( QLatin1String( "^[\\*|\\-|\\+]\\s+.*" ) );
@@ -322,7 +319,9 @@ Parser::parseListItem( const QStringList & fr, QSharedPointer< Block > parent,
 
 			data.clear();
 
-			parseList( fr.mid( pos ), item, linksToParse, workingPath );
+			QStringList nestedList = fr.mid( pos );
+
+			parseList( nestedList, item, linksToParse, workingPath );
 
 			break;
 		}
@@ -342,22 +341,21 @@ Parser::parseListItem( const QStringList & fr, QSharedPointer< Block > parent,
 }
 
 void
-Parser::parseCode( const QStringList & fr, QSharedPointer< Block > parent, int indent )
+Parser::parseCode( QStringList & fr, QSharedPointer< Block > parent, int indent )
 {
-	auto tmp = fr;
-	tmp.removeFirst();
-	tmp.removeLast();
+	fr.removeFirst();
+	fr.removeLast();
 
-	parseCodeIndentedBySpaces( tmp, parent, indent );
+	parseCodeIndentedBySpaces( fr, parent, indent );
 }
 
 void
-Parser::parseCodeIndentedBySpaces( const QStringList & fr, QSharedPointer< Block > parent,
+Parser::parseCodeIndentedBySpaces( QStringList & fr, QSharedPointer< Block > parent,
 	int indent )
 {
 	QString code;
 
-	for( const auto & l : fr )
+	for( const auto & l : qAsConst( fr ) )
 		code.append( ( indent > 0 ? l.right( l.length() - indent ) + QLatin1Char( '\n' ) :
 			l + QLatin1Char( '\n' ) ) );
 

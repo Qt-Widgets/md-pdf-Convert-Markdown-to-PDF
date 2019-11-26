@@ -59,18 +59,18 @@ private:
 	}; // enum BlockType
 
 	BlockType whatIsTheLine( const QString & str, bool inList = false ) const;
-	void parseFragment( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseFragment( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath );
-	void parseText( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseText( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath );
-	void parseBlockquote( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath );
-	void parseList( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseList( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath );
-	void parseCode( const QStringList & fr, QSharedPointer< Block > parent, int indent = 0 );
-	void parseCodeIndentedBySpaces( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseCode( QStringList & fr, QSharedPointer< Block > parent, int indent = 0 );
+	void parseCodeIndentedBySpaces( QStringList & fr, QSharedPointer< Block > parent,
 		int indent = 4 );
-	void parseListItem( const QStringList & fr, QSharedPointer< Block > parent,
+	void parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath );
 
 	template< typename STREAM >
