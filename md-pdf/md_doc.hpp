@@ -42,41 +42,39 @@ namespace MD {
 //! Enumeration of item types.
 enum class ItemType {
 	//! Unknown.
-	Unknown = 0,
+	Unknown,
 	//! Heading.
-	Heading = 1,
+	Heading,
 	//! Text.
-	Text = 2,
+	Text,
 	//! Paragraph.
-	Paragraph = 3,
+	Paragraph,
 	//! Line break.
-	LineBreak = 4,
+	LineBreak,
 	//! Blockquote.
-	Blockquote = 5,
+	Blockquote,
 	//! List item.
-	ListItem = 6,
-	//! Ordered list.
-	OrderedList = 7,
-	//! Unordered list.
-	UnorderedList = 8,
+	ListItem,
+	//! List.
+	List,
 	//! Link.
-	Link = 9,
+	Link,
 	//! Image.
-	Image = 10,
+	Image,
 	//! Code.
-	Code = 11,
+	Code,
 	//! Table cell.
-	TableCell = 12,
+	TableCell,
 	//! Table row.
-	TableRow = 13,
+	TableRow,
 	//! Table.
-	Table = 14,
+	Table,
 	//! Footnote ref.
-	FootnoteRef = 15,
+	FootnoteRef,
 	//! Footnote.
-	Footnote = 16,
+	Footnote,
 	//! Document.
-	Document = 17
+	Document
 }; // enum class ItemType
 
 
@@ -210,6 +208,8 @@ public:
 	void setItems( const Items & i );
 	void appendItem( QSharedPointer< Item > i );
 
+	bool isEmpty() const;
+
 private:
 	Items m_items;
 
@@ -269,47 +269,49 @@ public:
 
 	ItemType type() const override;
 
+	//! Type of the list.
+	enum ListType {
+		Ordered,
+		Unordered
+	}; // enum ListType
+
+	//! Preliminary state of the ordered list.
+	enum OrderedListPreState {
+		Start,
+		Continue
+	}; // enum OrderedListPreState
+
+	ListType listType() const;
+	void setListType( ListType t );
+
+	OrderedListPreState orderedListPreState() const;
+	void setOrderedListPreState( OrderedListPreState s );
+
 private:
+	ListType m_listType = Unordered;
+	OrderedListPreState m_orderedListState = Start;
+
 	Q_DISABLE_COPY( ListItem )
 }; // class ListItem
 
 
 //
-// OrderedList
+// List
 //
 
-//! Ordered list.
-class OrderedList final
+//! List.
+class List final
 	:	public Block
 {
 public:
-	OrderedList() = default;
-	~OrderedList() override = default;
+	List() = default;
+	~List() override = default;
 
 	ItemType type() const override;
 
 private:
-	Q_DISABLE_COPY( OrderedList )
-}; // class OrderedList
-
-
-//
-// UnorderedList
-//
-
-//! Unordered list.
-class UnorderedList final
-	:	public Block
-{
-public:
-	UnorderedList() = default;
-	~UnorderedList() override = default;
-
-	ItemType type() const override;
-
-private:
-	Q_DISABLE_COPY( UnorderedList )
-}; // class UnorderedList
+	Q_DISABLE_COPY( List )
+}; // class List
 
 
 //
@@ -518,7 +520,9 @@ class Document final
 {
 public:
 	Document() = default;
-	~Document() = default;
+	~Document() override = default;
+
+	ItemType type() const override;
 
 	typedef QMap< QString, QSharedPointer< Footnote > > Footnotes;
 

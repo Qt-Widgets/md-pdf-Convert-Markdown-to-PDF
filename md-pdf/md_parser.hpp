@@ -70,6 +70,9 @@ private:
 	void parseCode( const QStringList & fr, QSharedPointer< Block > parent, int indent = 0 );
 	void parseCodeIndentedBySpaces( const QStringList & fr, QSharedPointer< Block > parent,
 		int indent = 4 );
+	void parseListItem( const QStringList & fr, QSharedPointer< Block > parent,
+		QStringList & linksToParse, const QString & workingPath );
+
 	template< typename STREAM >
 	void parse( STREAM & stream, QSharedPointer< Block > parent, QStringList & linksToParse,
 		const QString & workingPath )
@@ -229,6 +232,7 @@ private:
 			pf();
 	}
 
+	//! Wrapper for QStringList to be behaved like a stream.
 	class StringListStream final
 	{
 	public:

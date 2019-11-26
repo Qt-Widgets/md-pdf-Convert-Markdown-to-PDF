@@ -141,6 +141,12 @@ Block::appendItem( QSharedPointer< Item > i )
 	m_items.append( i );
 }
 
+bool
+Block::isEmpty() const
+{
+	return m_items.isEmpty();
+}
+
 
 //
 // Paragraph
@@ -174,26 +180,39 @@ ListItem::type() const
 	return ItemType::ListItem;
 }
 
-
-//
-// OrderedList
-//
-
-ItemType
-OrderedList::type() const
+ListItem::ListType
+ListItem::listType() const
 {
-	return ItemType::OrderedList;
+	return m_listType;
+}
+
+void
+ListItem::setListType( ListType t )
+{
+	m_listType = t;
+}
+
+ListItem::OrderedListPreState
+ListItem::orderedListPreState() const
+{
+	return m_orderedListState;
+}
+
+void
+ListItem::setOrderedListPreState( OrderedListPreState s )
+{
+	m_orderedListState = s;
 }
 
 
 //
-// UnorderedList
+// List
 //
 
 ItemType
-UnorderedList::type() const
+List::type() const
 {
-	return ItemType::UnorderedList;
+	return ItemType::List;
 }
 
 
@@ -423,6 +442,12 @@ Footnote::type() const
 //
 // Document
 //
+
+ItemType
+Document::type() const
+{
+	return ItemType::Document;
+}
 
 const Document::Footnotes &
 Document::footnotesMap() const
