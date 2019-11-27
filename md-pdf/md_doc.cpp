@@ -217,13 +217,54 @@ List::type() const
 
 
 //
+// Image
+//
+
+ItemType
+Image::type() const
+{
+	return ItemType::Image;
+}
+
+const QString &
+Image::url() const
+{
+	return m_url;
+}
+
+void
+Image::setUrl( const QString & u )
+{
+	m_url = u;
+}
+
+const QString &
+Image::text() const
+{
+	return m_text;
+}
+
+void
+Image::setText( const QString & t )
+{
+	m_text = t;
+}
+
+bool
+Image::isEmpty() const
+{
+	return ( m_url.isEmpty() );
+}
+
+
+//
 // Link
 //
 
-Link::Link( const QUrl & u, const QString & t )
-	:	m_url( u )
-	,	m_text( t )
+Link::Link()
+	:	m_img( new Image() )
 {
+
 }
 
 ItemType
@@ -232,14 +273,14 @@ Link::type() const
 	return ItemType::Link;
 }
 
-const QUrl &
+const QString &
 Link::url() const
 {
 	return m_url;
 }
 
 void
-Link::setUrl( const QUrl & u )
+Link::setUrl( const QString & u )
 {
 	m_url = u;
 }
@@ -256,20 +297,28 @@ Link::setText( const QString & t )
 	m_text = t;
 }
 
-
-//
-// Image
-//
-
-Image::Image( const QUrl & u, const QString & t )
-	:	Link( u, t )
+TextOptions
+Link::textOptions() const
 {
+	return m_opts;
 }
 
-ItemType
-Image::type() const
+void
+Link::setTextOptions( const TextOptions & o )
 {
-	return ItemType::Image;
+	m_opts = o;
+}
+
+QSharedPointer< Image >
+Link::img() const
+{
+	return m_img;
+}
+
+void
+Link::setImg( QSharedPointer< Image > i )
+{
+	m_img = i;
 }
 
 

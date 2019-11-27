@@ -125,6 +125,22 @@ private:
 }; // class Heading
 
 
+//! Text option.
+enum TextOption {
+	//! No format.
+	TextWithoutFormat = 0,
+	//! Bold text.
+	BoldText = 1,
+	//! Italic text.
+	ItalicText = 2,
+	//! Strikethrough.
+	StrikethroughText = 4
+}; // enum TextOption
+
+Q_DECLARE_FLAGS( TextOptions, TextOption )
+Q_DECLARE_OPERATORS_FOR_FLAGS( TextOptions )
+
+
 //
 // Text
 //
@@ -139,20 +155,6 @@ public:
 
 	ItemType type() const override;
 
-	//! Text option.
-	enum TextOption {
-		//! No format.
-		NoFormat = 0,
-		//! Bold text.
-		BoldText = 1,
-		//! Italic text.
-		ItalicText = 2,
-		//! Strikethrough.
-		StrikethroughText = 4
-	}; // enum TextOption
-
-	Q_DECLARE_FLAGS( TextOptions, TextOption )
-
 	typedef QPair< QString, TextOptions > TextWithOptions;
 	typedef QVector< TextWithOptions > TextData;
 
@@ -165,8 +167,6 @@ private:
 
 	Q_DISABLE_COPY( Text )
 }; // class Text
-
-Q_DECLARE_OPERATORS_FOR_FLAGS( Text::TextOptions )
 
 
 //
@@ -315,6 +315,35 @@ private:
 
 
 //
+// Image
+//
+
+class Image final
+	:	public Item
+{
+public:
+	Image() = default;
+	~Image() override = default;
+
+	ItemType type() const override;
+
+	const QString & url() const;
+	void setUrl( const QString & u );
+
+	const QString & text() const;
+	void setText( const QString & t );
+
+	bool isEmpty() const;
+
+private:
+	QString m_url;
+	QString m_text;
+
+	Q_DISABLE_COPY( Image )
+}; // class Image
+
+
+//
 // Link
 //
 
@@ -323,42 +352,31 @@ class Link
 	:	public Item
 {
 public:
-	Link( const QUrl & u, const QString & t );
+	Link();
 	~Link() override = default;
 
 	ItemType type() const override;
 
-	const QUrl & url() const;
-	void setUrl( const QUrl & u );
+	const QString & url() const;
+	void setUrl( const QString & u );
 
 	const QString & text() const;
 	void setText( const QString & t );
 
+	TextOptions textOptions() const;
+	void setTextOptions( const TextOptions & o );
+
+	QSharedPointer< Image > img() const;
+	void setImg( QSharedPointer< Image > i );
+
 private:
-	QUrl m_url;
+	QString m_url;
 	QString m_text;
+	TextOptions m_opts;
+	QSharedPointer< Image > m_img;
 
 	Q_DISABLE_COPY( Link )
 }; // class Link
-
-
-//
-// Image
-//
-
-//! Image.
-class Image final
-	:	public Link
-{
-public:
-	Image( const QUrl & u, const QString & t );
-	~Image() override = default;
-
-	ItemType type() const override;
-
-private:
-	Q_DISABLE_COPY( Image )
-}; // class Image
 
 
 //

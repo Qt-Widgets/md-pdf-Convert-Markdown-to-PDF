@@ -284,7 +284,157 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
 
 {
+	static const QString specialChars( QLatin1String( "\\`*_{}[]()#+-.!|" ) );
+
 	QSharedPointer< Paragraph > p( new Paragraph() );
+
+	bool hasBreakLine = false;
+
+	enum class Lex {
+		Bold,
+		Italic,
+		Strikethrough,
+		Text,
+		Link,
+		Image,
+		ImageInLink,
+		Code,
+		FootnoteRef,
+		BreakLine
+	}; // enum class Lex
+
+	struct PreparsedData {
+		QVector< Lex > lexems;
+		QVector< QSharedPointer< Text > > txt;
+		QVector< QSharedPointer< Link > > lnk;
+		QVector< QSharedPointer< Code > > code;
+		QVector< QSharedPointer< FootnoteRef > > fnref;
+		QVector< QSharedPointer< Image > > img;
+	}; // struct PreparsedData
+
+	PreparsedData data;
+
+	auto parseImg = [&]( int i, QString & line ) -> int
+	{
+		return 0;
+	};
+
+	auto parseLnk = [&]( int i, QString & line ) -> int
+	{
+		return 0;
+	};
+
+	auto parseCode = [&]( int i, QString & line ) -> int
+	{
+		return 0;
+	};
+
+	auto parseUrl = [&]( int i, QString & line ) -> int
+	{
+		return 0;
+	};
+
+	auto createTextObj = [&]( QString & text )
+	{
+		if( !text.isEmpty() )
+		{
+			QSharedPointer< Text > t( new Text() );
+			t->appendText( Text::TextWithOptions( text, TextWithoutFormat) );
+			data.txt.append( t );
+			text.clear();
+		}
+	};
+
+	auto parseLine = [&]( QString & line )
+	{
+		hasBreakLine = line.endsWith( QLatin1String( "  " ) );
+
+		line = line.simplified();
+
+		static const QRegExp horRule( QLatin1String( "^(\\*{3,}|\\-{3,}|_{3,})$" ) );
+
+		// Will skip horizontal rules, for now at least...
+		if( !horRule.exactMatch( line ) )
+		{
+			QString text;
+
+			for( int i = 0, length = line.length(); i < length; ++i )
+			{
+				if( line[ i ] == QLatin1Char( '\\' ) && i + 1 < length &&
+					specialChars.contains( line[ i + 1] ) )
+				{
+					++i;
+
+					text.append( line[ i ] );
+				}
+				else if( line[ i ] == QLatin1Char( '!' ) && i + 1 < length &&
+					line[ i + 1 ] == QLatin1Char( '[' ) )
+				{
+					createTextObj( text );
+					i = parseImg( i, line );
+				}
+				else if( line[ i ] == QLatin1Char( '[' ) )
+				{
+					createTextObj( text );
+					i = parseLnk( i, line );
+				}
+				else if( line[ i ] == QLatin1Char( '`' ) )
+				{
+					createTextObj( text );
+					i = parseCode( i, line );
+				}
+				else if( line[ i ] == QLatin1Char( '<' ) )
+				{
+					createTextObj( text );
+					i = parseUrl( i, line );
+				}
+				else if( line[ i ] == QLatin1Char( '*' ) || line[ i ] == QLatin1Char( '_' ) )
+				{
+					QString style;
+
+					while( i < length &&
+						( line[ i ] == QLatin1Char( '*' ) || line[ i ] == QLatin1Char( '_' ) ) )
+					{
+						style.append( line[ i ] );
+						++i;
+					}
+
+					if( style == QLatin1String( "*" ) || style == QLatin1String( "_" ) )
+					{
+						createTextObj( text );
+						data.lexems.append( Lex::Italic );
+					}
+					else if( style == QLatin1String( "**" ) || style == QLatin1String( "__" ) )
+					{
+						createTextObj( text );
+						data.lexems.append( Lex::Bold );
+					}
+					else if( style == QLatin1String( "***" ) || style == QLatin1String( "___" ) ||
+						style == QLatin1String( "__*" ) || style == QLatin1String( "**_" ) ||
+						style == QLatin1String( "*__" ) || style == QLatin1String( "__*" ) )
+					{
+						createTextObj( text );
+						data.lexems.append( Lex::Bold );
+						data.lexems.append( Lex::Italic );
+					}
+					else
+						text.append( style );
+				}
+				else if( line[ i ] == QLatin1Char( '~' ) && i + 1 < length &&
+					line[ i + 1 ] == QLatin1Char( '~' ) )
+				{
+					++i;
+					createTextObj( text );
+					data.lexems.append( Lex::Strikethrough );
+				}
+			}
+		}
+	};
+
+	for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
+		parseLine( *it );
+
+	// Add here processing of parsed lexems.
 
 	if( !p->isEmpty() )
 		parent->appendItem( p );
