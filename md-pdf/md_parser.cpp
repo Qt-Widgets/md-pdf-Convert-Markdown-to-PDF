@@ -293,6 +293,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	enum class Lex {
 		Bold,
 		Italic,
+		BoldAndItalic,
 		Strikethrough,
 		Text,
 		Link,
@@ -414,8 +415,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						style == QLatin1String( "*__" ) || style == QLatin1String( "__*" ) )
 					{
 						createTextObj( text );
-						data.lexems.append( Lex::Bold );
-						data.lexems.append( Lex::Italic );
+						data.lexems.append( Lex::BoldAndItalic );
 					}
 					else
 						text.append( style );
@@ -428,6 +428,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					data.lexems.append( Lex::Strikethrough );
 				}
 			}
+
+			createTextObj( text );
 		}
 	};
 
