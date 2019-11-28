@@ -89,22 +89,28 @@ Text::type() const
 	return ItemType::Text;
 }
 
-const Text::TextData &
-Text::data() const
+const QString &
+Text::text() const
 {
-	return m_data;
+	return m_text;
 }
 
 void
-Text::setData( const TextData & d )
+Text::setText( const QString & t )
 {
-	m_data = d;
+	m_text = t;
+}
+
+const TextOptions &
+Text::opts() const
+{
+	return m_opts;
 }
 
 void
-Text::appendText( const TextWithOptions & t )
+Text::setOpts( const TextOptions & o )
 {
-	m_data.append( t );
+	m_opts = o;
 }
 
 

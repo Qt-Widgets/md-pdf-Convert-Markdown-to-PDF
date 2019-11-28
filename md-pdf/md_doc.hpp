@@ -155,15 +155,15 @@ public:
 
 	ItemType type() const override;
 
-	typedef QPair< QString, TextOptions > TextWithOptions;
-	typedef QVector< TextWithOptions > TextData;
+	const QString & text() const;
+	void setText( const QString & t );
 
-	const TextData & data() const;
-	void setData( const TextData & d );
-	void appendText( const TextWithOptions & t );
+	const TextOptions & opts() const;
+	void setOpts( const TextOptions & o );
 
 private:
-	TextData m_data;
+	QString m_text;
+	TextOptions m_opts;
 
 	Q_DISABLE_COPY( Text )
 }; // class Text
