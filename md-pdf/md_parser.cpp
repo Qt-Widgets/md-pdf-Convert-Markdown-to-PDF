@@ -53,7 +53,8 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Blo
 {
 	QFileInfo fi( fileName );
 
-	if( fi.exists() && fi.suffix().toLower() == QLatin1String( "md" ) )
+	if( fi.exists() && ( fi.suffix().toLower() == QLatin1String( "md" ) ||
+		fi.suffix().toLower() == QLatin1String( "markdown" ) ) )
 	{
 		QFile f( fileName );
 
@@ -302,6 +303,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		Link,
 		Image,
 		ImageInLink,
+		StartOfCode,
+		StartOfQuotedCode,
 		Code,
 		FootnoteRef,
 		BreakLine
@@ -309,11 +312,13 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 	struct PreparsedData {
 		QVector< Lex > lexems;
+
 		QVector< QSharedPointer< Text > > txt;
 		QVector< QSharedPointer< Link > > lnk;
 		QVector< QSharedPointer< Code > > code;
 		QVector< QSharedPointer< FootnoteRef > > fnref;
 		QVector< QSharedPointer< Image > > img;
+
 		int processedText = 0;
 		int processedLnk = 0;
 		int processedCode = 0;
@@ -443,6 +448,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							img->setText( t );
 							img->setUrl( lnk );
 							data.img.append( img );
+							data.lexems.append( Lex::Image );
 
 							return i;
 						}
@@ -462,17 +468,11 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		return 0;
 	}; // parseLnk
 
-	// Read code.
-	auto parseCode = [&]( int i, const QString & line, QString & text ) -> int
-	{
-		return 0;
-	}; // parseCode
-
-	// Read URL in <...>
-	auto parseUrl = [&]( int i, const QString & line, QString & text ) -> int
-	{
-		return 0;
-	}; // parseUrl
+	enum class LineParsingState {
+		Finished,
+		UnfinishedCode,
+		UnfinishedQuotedCode
+	}; // enum class LineParsingState
 
 	// Create text object.
 	auto createTextObj = [&]( const QString & text )
@@ -483,13 +483,86 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			t->setText( text );
 			t->setOpts( TextWithoutFormat );
 			data.txt.append( t );
+			data.lexems.append( Lex::Text );
 		}
 	}; // createTextObject
 
+	// Read code.
+	auto parseCode = [&]( int i, const QString & line, LineParsingState & prevAndNext ) -> int
+	{
+		const int length = line.length();
+
+		bool quoted = false;
+
+		if( prevAndNext != LineParsingState::Finished )
+			quoted = ( prevAndNext == LineParsingState::UnfinishedQuotedCode );
+		else
+		{
+			if( i + 1 < length && line[ i + 1 ] == QLatin1Char( '`' ) )
+			{
+				quoted = true;
+
+				data.lexems.append( Lex::StartOfQuotedCode );
+
+				i += 2;
+			}
+			else
+			{
+				data.lexems.append( Lex::StartOfCode );
+
+				++i;
+			}
+		}
+
+		QString code;
+
+		while( i < length )
+		{
+			if( line[ i ] == QLatin1Char( '`' ) )
+			{
+				if( !quoted )
+					break;
+				else if( i + 1 < length && line[ i + 1 ] == QLatin1Char( '`' ) )
+				{
+					i += 2;
+
+					break;
+				}
+			}
+
+			code.append( line[ i ] );
+
+			++i;
+		}
+
+		createTextObj( code );
+
+		if( i <= length )
+			data.lexems.append( quoted ? Lex::StartOfQuotedCode : Lex::StartOfCode );
+
+		return i;
+	}; // parseCode
+
+	// Read URL in <...>
+	auto parseUrl = [&]( int i, const QString & line, QString & text ) -> int
+	{
+		return 0;
+	}; // parseUrl
+
 	// Parse one line in paragraph.
-	auto parseLine = [&]( QString & line )
+	auto parseLine = [&]( QString & line, LineParsingState prev ) -> LineParsingState
 	{
 		bool hasBreakLine = line.endsWith( QLatin1String( "  " ) );
+
+		int pos = 0;
+
+		if( prev != LineParsingState::Finished )
+		{
+			pos = parseCode( 0, line, prev );
+
+			if( prev != LineParsingState::Finished )
+				return prev;
+		}
 
 		static const QRegExp nonSpace( QLatin1String( "[^\\s]" ) );
 
@@ -505,7 +578,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		{
 			QString text;
 
-			for( int i = 0, length = line.length(); i < length; ++i )
+			for( int i = pos, length = line.length(); i < length; ++i )
 			{
 				if( line[ i ] == QLatin1Char( '\\' ) && i + 1 < length &&
 					specialChars.contains( line[ i + 1] ) )
@@ -531,7 +604,10 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseCode( i, line, text );
+					i = parseCode( i, line, prev );
+
+					if( prev != LineParsingState::Finished )
+						return prev;
 				}
 				else if( line[ i ] == QLatin1Char( '<' ) )
 				{
@@ -589,10 +665,14 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			if( hasBreakLine )
 				data.lexems.append( Lex::BreakLine );
 		}
+
+		return LineParsingState::Finished;
 	}; // parseLine
 
+	LineParsingState state = LineParsingState::Finished;
+
 	for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
-		parseLine( *it );
+		state = parseLine( *it, state );
 
 	// Set flags for all nested items.
 	auto setFlags = [&]( Lex lex, QVector< Lex >::iterator it )
@@ -652,7 +732,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		}
 	}; // setFlags
 
-	// Add real items to paragraph  after pre-parsing.
+	// Add real items to paragraph  after pre-parsing. Handle code.
 	for( auto it = data.lexems.begin(), last = data.lexems.end(); it != last; ++it )
 	{
 		switch( *it )
@@ -663,6 +743,39 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			case Lex::Strikethrough :
 			{
 				setFlags( *it, it );
+			}
+				break;
+
+			case Lex::StartOfCode :
+			case Lex::StartOfQuotedCode :
+			{
+				auto end = std::find( it + 1, data.lexems.end(), *it );
+
+				if( end != data.lexems.end() )
+				{
+					++it;
+
+					QSharedPointer< Code > c( new Code( QString(), true ) );
+
+					for( ; it != end; ++it )
+					{
+						c->setText( c->text() + data.txt[ data.processedText ]->text() +
+							QLatin1Char( ' ' ) );
+
+						++data.processedText;
+					}
+
+					++it;
+
+					p->appendItem( c );
+				}
+				else
+				{
+					auto text = data.txt[ data.processedText ]->text();
+					text.prepend( *it == Lex::StartOfCode ?
+						QLatin1String( "`" ) : QLatin1String( "``" ) );
+					data.txt[ data.processedText ]->setText( text );
+				}
 			}
 				break;
 
