@@ -515,15 +515,22 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		}
 
 		QString code;
+		bool finished = false;
 
 		while( i < length )
 		{
 			if( line[ i ] == QLatin1Char( '`' ) )
 			{
 				if( !quoted )
+				{
+					finished = true;
+
 					break;
+				}
 				else if( i + 1 < length && line[ i + 1 ] == QLatin1Char( '`' ) )
 				{
+					finished = true;
+
 					i += 2;
 
 					break;
@@ -537,7 +544,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 		createTextObj( code );
 
-		if( i <= length )
+		if( finished )
 			data.lexems.append( quoted ? Lex::StartOfQuotedCode : Lex::StartOfCode );
 
 		return i;
