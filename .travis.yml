@@ -36,7 +36,7 @@ script:
     if [ ${COVERITY_SCAN_BRANCH} != 1 ]; then \
       mkdir build || { exit 1; }; \
       cd build || { exit 1; }; \
-      cmake -DENABLE_COVERAGE=ON .. || { exit 1; }; \
+      cmake -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .. || { exit 1; }; \
       make || { exit 1; }; \
       ctest --output-on-failure || { exit 1; }; \
       cd .. || { exit 1; }; \
