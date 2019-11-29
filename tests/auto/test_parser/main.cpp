@@ -20,8 +20,12 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <md_parser.hpp>
+
 
 int main( int, char ** )
 {
+	MD::Parser p;
+	auto doc = p.parse( QLatin1String( "./test1.md" ) );
 	return 0;
 }
