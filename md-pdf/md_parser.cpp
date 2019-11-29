@@ -28,6 +28,7 @@
 #include <QFile>
 #include <QDir>
 #include <QRegExp>
+#include <QtGlobal>
 
 
 namespace MD {
