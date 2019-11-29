@@ -547,8 +547,14 @@ public:
 	const Footnotes & footnotesMap() const;
 	void insertFootnote( const QString & id, QSharedPointer< Footnote > fn );
 
+	typedef QMap< QString, QSharedPointer< Link > > LabeledLinks;
+
+	const LabeledLinks & labeledLinks() const;
+	void insertLabeledLink( const QString & label, QSharedPointer< Link > lnk );
+
 private:
 	Footnotes m_footnotes;
+	LabeledLinks m_labeledLinks;
 
 	Q_DISABLE_COPY( Document )
 }; // class Document;

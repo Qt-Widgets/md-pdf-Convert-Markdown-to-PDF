@@ -369,7 +369,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			QString lnk;
 
 			while( i < length && !line[ i ].isSpace() &&
-				( line[ i ] != QLatin1Char( ')' ) && line[ i - 1 ] != QLatin1Char( '\\' ) ) )
+				( line[ i ] != QLatin1Char( ')' ) && line[ i - 1 ] != QLatin1Char( '\\' ) )
+				&& line[ i ] != QLatin1Char( ']' ) )
 			{
 				lnk.append( line[ i ] );
 				++i;
@@ -420,7 +421,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	}; // skipLnkCaption
 
 	// Read image.
-	auto parseImg = [&]( int i, const QString & line, QString & text ) -> int
+	auto parseImg = [&]( int i, const QString & line, QString & text, bool * ok = nullptr ) -> int
 	{
 		const int start = i;
 		i += 2;
@@ -450,6 +451,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							data.img.append( img );
 							data.lexems.append( Lex::Image );
 
+							if( ok )
+								*ok = true;
+
 							return i;
 						}
 					}
@@ -465,7 +469,244 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	// Read link.
 	auto parseLnk = [&]( int i, const QString & line, QString & text ) -> int
 	{
-		return 0;
+		const int startPos = i;
+		bool withImage = false;
+
+		++i;
+
+		i = skipSpaces( i, line );
+
+		const int length = line.length();
+		QString lnkText, url;
+
+		if( i < length )
+		{
+			if( i + 1 < length && line[ i ] == QLatin1Char( '!' ) &&
+				line[ i + 1 ] == QLatin1Char( '[' ) )
+			{
+				bool ok = false;
+
+				QString tmp;
+
+				i = parseImg( i, line, tmp, &ok );
+
+				if( !ok )
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+				else
+					withImage = true;
+			}
+			else if( line[ i ] == QLatin1Char( '^' ) )
+			{
+				++i;
+				auto lnk = readLnk( i, line );
+
+				i = skipSpaces( i, line );
+
+				if( i < length && line[ i ] == QLatin1Char( ']' ) )
+				{
+					if( i + 1 < length && line[ i + 1 ] != QLatin1Char( ':' ) )
+					{
+						QSharedPointer< FootnoteRef > fnr(
+							new FootnoteRef( lnk + QDir::separator() + workingPath + fileName ) );
+
+						data.fnref.append( fnr );
+						data.lexems.append( Lex::FootnoteRef );
+
+						return i + 1;
+					}
+				}
+				else
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+			}
+			else
+			{
+				i = skipSpaces( i, line );
+
+				if( i < length )
+				{
+					lnkText = readLinkText( i, line ).simplified();
+
+					if( lnkText.isEmpty() )
+					{
+						text.append( line.mid( startPos, length - i ) );
+
+						return i;
+					}
+				}
+				else
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+			}
+		}
+
+		i = skipSpaces( i, line );
+
+		if( i < length )
+		{
+			if( line[ i ] == QLatin1Char( ':' ) )
+			{
+				i = skipSpaces( i, line );
+
+				if( i < length )
+				{
+					url = readLnk( i, line );
+
+					if( !url.isEmpty() )
+					{
+						if( QUrl( url ).isLocalFile() )
+						{
+							QFileInfo fi( url );
+
+							if( fi.isRelative() )
+								url = workingPath + url;
+
+							linksToParse.append( url );
+						}
+
+						if( parent->type() == ItemType::Document )
+						{
+							QSharedPointer< Link > lnk( new Link() );
+							lnk->setUrl( url );
+
+							static_cast< Document* > ( parent.get() )->insertLabeledLink(
+								QString::fromLatin1( "#" ) + lnkText +
+								QDir::separator() + workingPath + fileName, lnk );
+						}
+
+						return length;
+					}
+					else
+					{
+						text.append( line.mid( startPos, length - i ) );
+
+						return i;
+					}
+				}
+				else
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+			}
+			else if( line[ i ] == QLatin1Char( '(' ) )
+			{
+				i = skipSpaces( i, line );
+
+				if( i < length )
+				{
+					url = readLnk( i, line );
+
+					if( !url.isEmpty() && i < length )
+					{
+						if( !url.startsWith( QLatin1Char( '#' ) ) )
+						{
+							i = skipSpaces( i, line );
+
+							if( i < length )
+							{
+								if( skipLnkCaption( i, line ) )
+								{
+									if( QUrl( url ).isLocalFile() )
+									{
+										QFileInfo fi( url );
+
+										if( fi.isRelative() )
+											url = workingPath + url;
+
+										linksToParse.append( url );
+									}
+								}
+							}
+						}
+						else
+							url = url + QDir::separator() + workingPath + fileName;
+					}
+					else
+					{
+						text.append( line.mid( startPos, length - i ) );
+
+						return i;
+					}
+				}
+				else
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+			}
+			else if( line[ i ] == QLatin1Char( '[' ) )
+			{
+				i = skipSpaces( i, line );
+
+				if( i < length )
+				{
+					url = readLnk( i, line );
+
+					if( !url.isEmpty() )
+					{
+						i = skipSpaces( i, line );
+
+						if( i < length && line[ i ] == QLatin1Char( ']' ) )
+						{
+							url = QString::fromLatin1( "#" ) + url +
+								QDir::separator() + workingPath + fileName;
+
+							++i;
+						}
+						else
+						{
+							text.append( line.mid( startPos, length - i ) );
+
+							return i;
+						}
+					}
+				}
+				else
+				{
+					text.append( line.mid( startPos, length - i ) );
+
+					return i;
+				}
+			}
+			else
+			{
+				text.append( line.mid( startPos, length - i ) );
+
+				return i;
+			}
+		}
+		else
+		{
+			text.append( line.mid( startPos, length - i ) );
+
+			if( withImage )
+				data.img.removeLast();
+		}
+
+		QSharedPointer< Link > lnk( new Link() );
+		lnk->setUrl( url );
+		lnk->setText( lnkText );
+		data.lnk.append( lnk );
+
+		if( withImage )
+			data.lexems.append( Lex::ImageInLink );
+		else
+			data.lexems.append( Lex::Link );
+
+		return i;
 	}; // parseLnk
 
 	enum class LineParsingState {
@@ -553,7 +794,38 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	// Read URL in <...>
 	auto parseUrl = [&]( int i, const QString & line, QString & text ) -> int
 	{
-		return 0;
+		++i;
+
+		const int length = line.length();
+
+		bool done = false;
+		QString url;
+
+		while( i < length )
+		{
+			if( line[ i ] != QLatin1Char( '>' ) )
+				url.append( line[ i ] );
+			else
+			{
+				done = true;
+				++i;
+				break;
+			}
+
+			++i;
+		}
+
+		if( done )
+		{
+			QSharedPointer< Link > lnk( new Link() );
+			lnk->setUrl( url.simplified() );
+			data.lnk.append( lnk );
+			data.lexems.append( Lex::Link );
+		}
+		else
+			text.append( QString::fromLatin1( "<" ) + url );
+
+		return i;
 	}; // parseUrl
 
 	// Parse one line in paragraph.

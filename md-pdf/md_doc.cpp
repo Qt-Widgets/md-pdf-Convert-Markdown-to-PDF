@@ -516,4 +516,16 @@ Document::insertFootnote( const QString & id, QSharedPointer< Footnote > fn )
 	m_footnotes.insert( id, fn );
 }
 
+const Document::LabeledLinks &
+Document::labeledLinks() const
+{
+	return m_labeledLinks;
+}
+
+void
+Document::insertLabeledLink( const QString & label, QSharedPointer< Link > lnk )
+{
+	m_labeledLinks.insert( label, lnk );
+}
+
 } /* namespace MD */
