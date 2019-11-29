@@ -26,10 +26,10 @@ add_executable( test.md_parser ${SRC} )
 
 if( ENABLE_COVERAGE )
 	target_compile_options( test.md_parser PRIVATE --coverage )
-	target_link_libraries( test.md_parser PRIVATE --coverage )
+	target_link_libraries( test.md_parser md-parser Qt5::Core PRIVATE --coverage )
+else()
+	target_link_libraries( test.md_parser md-parser Qt5::Core )
 endif( ENABLE_COVERAGE )
-
-target_link_libraries( test.md_parser md-parser Qt5::Core )
 
 add_test( NAME test.md_parser
 	COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test.md_parser
