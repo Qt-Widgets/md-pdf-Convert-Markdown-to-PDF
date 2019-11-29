@@ -20,7 +20,7 @@ file( MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/lib )
 ExternalProject_Add(
     podofo
     SOURCE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/podofo-0.9.6"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/podofo )
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_SOURCE_DIR}/lib/podofo -DPODOFO_BUILD_LIB_ONLY=ON )
 
 add_subdirectory( md-pdf )
 
