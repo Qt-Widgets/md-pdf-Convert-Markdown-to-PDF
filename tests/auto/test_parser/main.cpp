@@ -33,3 +33,23 @@ TEST_CASE( "empty" )
 	auto doc = p.parse( QLatin1String( "./test1.md" ) );
 	REQUIRE( doc->isEmpty() == true );
 }
+
+TEST_CASE( "only text" )
+{
+	MD::Parser p;
+	auto doc = p.parse( QLatin1String( "./test2.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 1 );
+	REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
+
+	auto dt = static_cast< MD::Text* > ( dp->items().first().data() );
+
+	REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+	REQUIRE( dt->text() == QLatin1String( "This is just a text!" ) );
+}

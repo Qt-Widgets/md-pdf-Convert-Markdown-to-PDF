@@ -292,8 +292,6 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 {
 	static const QString specialChars( QLatin1String( "\\`*_{}[]()#+-.!|" ) );
 
-	QSharedPointer< Paragraph > p( new Paragraph() );
-
 	enum class Lex {
 		Bold,
 		Italic,
@@ -936,6 +934,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					text.clear();
 					data.lexems.append( Lex::Strikethrough );
 				}
+				else
+					text.append( line[ i ] );
 			}
 
 			createTextObj( text.simplified() );
@@ -1046,7 +1046,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 					++it;
 
-					p->appendItem( c );
+					parent->appendItem( c );
 				}
 				else
 				{
@@ -1060,28 +1060,28 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 			case Lex::Text :
 			{
-				p->appendItem( data.txt[ data.processedText ] );
+				parent->appendItem( data.txt[ data.processedText ] );
 				++data.processedText;
 			}
 				break;
 
 			case Lex::Link :
 			{
-				p->appendItem( data.lnk[ data.processedLnk ] );
+				parent->appendItem( data.lnk[ data.processedLnk ] );
 				++data.processedLnk;
 			}
 				break;
 
 			case Lex::Image :
 			{
-				p->appendItem( data.img[ data.processedImg ] );
+				parent->appendItem( data.img[ data.processedImg ] );
 				++data.processedImg;
 			}
 				break;
 
 			case Lex::BreakLine :
 			{
-				p->appendItem( QSharedPointer< Item > ( new LineBreak() ) );
+				parent->appendItem( QSharedPointer< Item > ( new LineBreak() ) );
 			}
 				break;
 
@@ -1089,30 +1089,26 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			{
 				data.lnk[ data.processedLnk ]->setImg( data.img[ data.processedImg ] );
 				++data.processedImg;
-				p->appendItem( data.lnk[ data.processedLnk ] );
+				parent->appendItem( data.lnk[ data.processedLnk ] );
 				++data.processedLnk;
 			}
 				break;
 
 			case Lex::Code :
 			{
-				p->appendItem( data.code[ data.processedCode ] );
+				parent->appendItem( data.code[ data.processedCode ] );
 				++data.processedCode;
 			}
 				break;
 
 			case Lex::FootnoteRef :
 			{
-				p->appendItem( data.fnref[ data.processedFnRef ] );
+				parent->appendItem( data.fnref[ data.processedFnRef ] );
 				++data.processedFnRef;
 			}
 				break;
 		}
 	}
-
-	// All is done. Add paragraph to parent.
-	if( !p->isEmpty() )
-		parent->appendItem( p );
 }
 
 void
