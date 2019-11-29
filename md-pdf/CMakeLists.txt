@@ -5,15 +5,6 @@ if( ENABLE_COVERAGE )
 	set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../cmake )
     include( Coveralls )
     coveralls_turn_on_coverage()
-
-	set( COVERAGE_SRCS md_doc.hpp
-		md_doc.cpp
-		md_parser.hpp
-		md_parser.cpp )
-
-    coveralls_setup(
-        "${COVERAGE_SRCS}"
-        ON )
 endif()
 
 if( ENABLE_COVERAGE )
