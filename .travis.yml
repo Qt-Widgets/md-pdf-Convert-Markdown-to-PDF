@@ -1,6 +1,6 @@
 
 sudo: required
-dist: trusty
+dist: bionic
 
 language:
   - cpp
@@ -21,7 +21,6 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - cmake
-      - g++-4.9
       - qtbase5-dev
   coverity_scan:
     project:
@@ -35,7 +34,6 @@ addons:
 script:
   - |
     if [ ${COVERITY_SCAN_BRANCH} != 1 ]; then \
-      export CXX="g++-4.9" CC="gcc-4.9" || { exit 1; }; \
       mkdir build || { exit 1; }; \
       cd build || { exit 1; }; \
       cmake -DENABLE_COVERAGE=ON .. || { exit 1; }; \
