@@ -22,7 +22,7 @@ file( COPY test5.md
 	DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
     
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../../../md-pdf
+	${CMAKE_CURRENT_SOURCE_DIR}/../../..
 	${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty )
 
 link_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../../../lib )

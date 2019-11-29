@@ -20,12 +20,16 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <md_parser.hpp>
+#include <md-pdf/md_parser.hpp>
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+// doctest include.
+#include <doctest/doctest.h>
 
 
-int main( int, char ** )
+TEST_CASE( "empty" )
 {
 	MD::Parser p;
 	auto doc = p.parse( QLatin1String( "./test1.md" ) );
-	return 0;
+	REQUIRE( doc->isEmpty() == true );
 }
