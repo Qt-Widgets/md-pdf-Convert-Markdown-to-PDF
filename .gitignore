@@ -2,6 +2,7 @@
 /**/debug/
 /**/release/
 /lib/
+/build/
 /**/Makefile*
 /**/*.o
 /**/*.user

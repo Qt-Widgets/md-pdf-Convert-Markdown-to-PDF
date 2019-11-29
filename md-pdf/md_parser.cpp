@@ -579,7 +579,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							QSharedPointer< Link > lnk( new Link() );
 							lnk->setUrl( url );
 
-							static_cast< Document* > ( parent.get() )->insertLabeledLink(
+							static_cast< Document* > ( parent.data() )->insertLabeledLink(
 								QString::fromLatin1( "#" ) + lnkText +
 								QDir::separator() + workingPath + fileName, lnk );
 						}

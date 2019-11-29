@@ -30,6 +30,7 @@
 #include <QSharedPointer>
 #include <QUrl>
 #include <QMap>
+#include <QVector>
 
 
 namespace MD {
