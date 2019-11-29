@@ -1,6 +1,11 @@
 
 project( md-pdf-gui )
 
+if( ENABLE_COVERAGE )
+    include( Coveralls )
+    coveralls_turn_on_coverage()
+endif()
+
 set( CMAKE_AUTOMOC ON )
 set( CMAKE_AUTORCC ON )
 set( CMAKE_AUTOUIC ON )
@@ -14,6 +19,15 @@ set( LIB_SRC md_doc.hpp
     md_parser.cpp )
 
 set( GUI_SRC main.cpp )
+
+if( ENABLE_COVERAGE )
+    set( COVERAGE_SRCS ${LIB_SRC} )
+
+    coveralls_setup(
+        "${COVERAGE_SRCS}"
+        ON
+        "${PROJECT_SOURCE_DIR}/CMakeModules/" )
+endif()
     
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
@@ -21,12 +35,7 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib )
 
 add_library( md-parser STATIC ${LIB_SRC} )
 
-if( ENABLE_COVERAGE )
-	target_compile_options( md-parser PRIVATE --coverage )
-	target_link_libraries( md-parser PRIVATE --coverage Qt5::Core )
-else()
-	target_link_libraries( md-parser Qt5::Core )
-endif( ENABLE_COVERAGE )
+target_link_libraries( md-parser Qt5::Core )
 
 add_executable( md-pdf-gui ${GUI_SRC} )
 
