@@ -23,7 +23,7 @@ add_library( md-parser STATIC ${LIB_SRC} )
 
 if( ENABLE_COVERAGE )
 	target_compile_options( md-parser PRIVATE --coverage )
-	target_link_libraries( md-parser Qt5::Core PRIVATE --coverage )
+	target_link_libraries( md-parser PRIVATE --coverage Qt5::Core )
 else()
 	target_link_libraries( md-parser Qt5::Core )
 endif( ENABLE_COVERAGE )

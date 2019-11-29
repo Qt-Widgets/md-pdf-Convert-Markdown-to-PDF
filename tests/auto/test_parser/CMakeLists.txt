@@ -26,7 +26,7 @@ add_executable( test.md_parser ${SRC} )
 
 if( ENABLE_COVERAGE )
 	target_compile_options( test.md_parser PRIVATE --coverage )
-	target_link_libraries( test.md_parser md-parser Qt5::Core PRIVATE --coverage )
+	target_link_libraries( test.md_parser PRIVATE --coverage md-parser Qt5::Core )
 else()
 	target_link_libraries( test.md_parser md-parser Qt5::Core )
 endif( ENABLE_COVERAGE )
