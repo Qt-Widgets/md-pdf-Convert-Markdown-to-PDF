@@ -2,6 +2,7 @@
 project( md-pdf-gui )
 
 if( ENABLE_COVERAGE )
+	set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../cmake )
     include( Coveralls )
     coveralls_turn_on_coverage()
 endif()
@@ -19,15 +20,6 @@ set( LIB_SRC md_doc.hpp
     md_parser.cpp )
 
 set( GUI_SRC main.cpp )
-
-if( ENABLE_COVERAGE )
-    set( COVERAGE_SRCS ${LIB_SRC} )
-
-    coveralls_setup(
-        "${COVERAGE_SRCS}"
-        ON
-        "${PROJECT_SOURCE_DIR}/CMakeModules/" )
-endif()
     
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 

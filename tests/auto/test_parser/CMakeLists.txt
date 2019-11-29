@@ -4,6 +4,7 @@ project( test.md_parser )
 find_package( Qt5 COMPONENTS Core REQUIRED )
 
 if( ENABLE_COVERAGE )
+	set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake )
     include( Coveralls )
     coveralls_turn_on_coverage()
 endif()
@@ -28,15 +29,6 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
 link_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../../../lib )
 
 add_executable( test.md_parser ${SRC} )
-
-if( ENABLE_COVERAGE )
-    set( COVERAGE_SRCS ${SRC} )
-
-    coveralls_setup(
-        "${COVERAGE_SRCS}"
-        ON
-        "${PROJECT_SOURCE_DIR}/CMakeModules/" )
-endif()
 
 target_link_libraries( test.md_parser md-parser Qt5::Core )
 

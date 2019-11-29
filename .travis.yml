@@ -8,13 +8,6 @@ language:
 compiler:
   - gcc
 
-before_install:
-  - pip install --user cpp-coveralls
-  - |
-    echo -n | openssl s_client -connect scan.coverity.com:443 | \
-    sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | \
-    sudo tee -a /etc/ssl/certs/ca-
-
 addons:
   apt:
     sources:
@@ -22,22 +15,12 @@ addons:
     packages:
       - cmake
       - qtbase5-dev
-  coverity_scan:
-    project:
-      name: "igormironchik/md-pdf"
-      description: "Build submitted via Travis CI"
-    notification_email: igor.mironchik@gmail.com
-    build_command_prepend: echo 'Starting prebuild step...'; sudo ln -s -f /usr/bin/g++-4.9 /usr/bin/g++; sudo ln -s -f /usr/bin/gcc-4.9 /usr/bin/gcc; mkdir build; cd build; cmake ..; echo 'Prebuild step finished...';
-    build_command: make
-    branch_pattern: coverity_scan
 
 script:
   - |
-    if [ ${COVERITY_SCAN_BRANCH} != 1 ]; then \
-      mkdir build || { exit 1; }; \
-      cd build || { exit 1; }; \
-      cmake -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .. || { exit 1; }; \
-      make || { exit 1; }; \
-      ctest --output-on-failure || { exit 1; }; \
-      make coveralls || { exit 1; }; \
-      fi
+    mkdir build || { exit 1; }; \
+    cd build || { exit 1; }; \
+    cmake -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .. || { exit 1; }; \
+    make || { exit 1; }; \
+    ctest --output-on-failure || { exit 1; }; \
+    make coveralls || { exit 1; };
