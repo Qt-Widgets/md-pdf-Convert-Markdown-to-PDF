@@ -1,11 +1,6 @@
 
 project( test.md_parser )
 
-if( ENABLE_COVERAGE )
-	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage" )
-	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage" )
-endif( ENABLE_COVERAGE )
-
 find_package( Qt5 COMPONENTS Core REQUIRED )
 
 set( SRC main.cpp )
