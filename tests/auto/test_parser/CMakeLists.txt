@@ -24,6 +24,11 @@ link_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../../../lib )
 
 add_executable( test.md_parser ${SRC} )
 
+if( ENABLE_COVERAGE )
+	target_compile_options( test.md_parser PRIVATE --coverage )
+	target_link_libraries( test.md_parser PRIVATE --coverage )
+endif( ENABLE_COVERAGE )
+
 target_link_libraries( test.md_parser md-parser Qt5::Core )
 
 add_test( NAME test.md_parser

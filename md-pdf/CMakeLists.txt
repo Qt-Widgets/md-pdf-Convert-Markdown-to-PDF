@@ -21,6 +21,11 @@ set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib )
 
 add_library( md-parser STATIC ${LIB_SRC} )
 
+if( ENABLE_COVERAGE )
+	target_compile_options( md-parser PRIVATE --coverage )
+	target_link_libraries( md-parser PRIVATE --coverage )
+endif( ENABLE_COVERAGE )
+
 target_link_libraries( md-parser Qt5::Core )
 
 add_executable( md-pdf-gui ${GUI_SRC} )
