@@ -134,3 +134,48 @@ TEST_CASE( "three lines" )
 		REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
 	}
 }
+
+TEST_CASE( "with linebreak" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test5.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 4 );
+
+	{
+		REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 1..." ) );
+	}
+
+	REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::LineBreak );
+
+	{
+		REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 2..." ) );
+	}
+
+	{
+		REQUIRE( dp->items().at( 3 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 3 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
+	}
+}
