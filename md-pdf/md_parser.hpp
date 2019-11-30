@@ -179,6 +179,8 @@ private:
 
 				continue;
 			}
+			else if( simplified.isEmpty() && type == BlockType::Unknown )
+				continue;
 
 			// Got new empty line.
 			if( simplified.isEmpty() )
@@ -271,8 +273,6 @@ private:
 
 				pf();
 			}
-			else
-				fragment.append( line );
 		}
 
 		if( !fragment.isEmpty() )

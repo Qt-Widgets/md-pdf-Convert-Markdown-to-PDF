@@ -53,3 +53,41 @@ TEST_CASE( "only text" )
 	REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
 	REQUIRE( dt->text() == QLatin1String( "This is just a text!" ) );
 }
+
+TEST_CASE( "two paragraphs" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test3.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 2 );
+
+	{
+		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+		REQUIRE( dp->items().size() == 1 );
+		REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().first().data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Paragraph 1." ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+
+		REQUIRE( dp->items().size() == 1 );
+		REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().first().data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Paragraph 2." ) );
+	}
+}
