@@ -319,8 +319,11 @@ private:
 
 			while( !m_stream.atEnd() )
 			{
-				if( !c.isNull() )
+				if( !c.isNull() && c != QLatin1Char( '\r' ) )
 					line.append( c );
+
+				if( c == QLatin1Char( '\r' ) )
+					rFound = true;
 
 				m_stream >> c;
 
@@ -332,13 +335,15 @@ private:
 				}
 
 				if( c == QLatin1Char( '\r' ) )
-					rFound = true;
-				else if( c == QLatin1Char( '\n' ) )
 				{
-					m_buf = QChar();
+					rFound = true;
 
-					return line;
+					c = QChar();
+
+					continue;
 				}
+				else if( c == QLatin1Char( '\n' ) )
+					return line;
 
 				if( !c.isNull() )
 				{
@@ -347,6 +352,9 @@ private:
 					c = QChar();
 				}
 			}
+
+			if( !c.isNull() )
+				line.append( c );
 
 			return line;
 		}

@@ -26,6 +26,8 @@
 // doctest include.
 #include <doctest/doctest.h>
 
+#include <QFile>
+
 
 TEST_CASE( "empty" )
 {
@@ -485,41 +487,116 @@ TEST_CASE( "three lines with \\r" )
 {
 	MD::Parser parser;
 
-	auto doc = parser.parse( QLatin1String( "./test14.md" ) );
+	QFile f( "./test14.md" );
 
-	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
-
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
-
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
-
-	REQUIRE( dp->items().size() == 3 );
-
+	if( f.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
 	{
-		REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+		f.write( "Line 1...\rLine 2...\r\nLine 3...\n" );
+		f.close();
 
-		auto dt = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+		auto doc = parser.parse( QLatin1String( "./test14.md" ) );
 
-		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
-		REQUIRE( dt->text() == QLatin1String( "Line 1..." ) );
+		REQUIRE( doc->isEmpty() == false );
+		REQUIRE( doc->items().size() == 1 );
+
+		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+		REQUIRE( dp->items().size() == 3 );
+
+		{
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 1..." ) );
+		}
+
+		{
+			REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 1 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 2..." ) );
+		}
+
+		{
+			REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
+		}
 	}
+	else
+		REQUIRE( true == false );
+}
 
+TEST_CASE( "three paragraphs with \\r" )
+{
+	MD::Parser parser;
+
+	QFile f( "./test15.md" );
+
+	if( f.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
 	{
-		REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Text );
+		f.write( "Line 1...\r\rLine 2...\r\rLine 3...\r" );
+		f.close();
 
-		auto dt = static_cast< MD::Text* > ( dp->items().at( 1 ).data() );
+		auto doc = parser.parse( QLatin1String( "./test15.md" ) );
 
-		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
-		REQUIRE( dt->text() == QLatin1String( "Line 2..." ) );
+		REQUIRE( doc->isEmpty() == false );
+		REQUIRE( doc->items().size() == 3 );
+
+		{
+			REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+			REQUIRE( dp->items().size() == 1 );
+
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Line 1..." ) );
+		}
+
+		{
+			REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+
+			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+
+			REQUIRE( dp->items().size() == 1 );
+
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Line 2..." ) );
+		}
+
+		{
+			REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
+
+			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
+
+			REQUIRE( dp->items().size() == 1 );
+
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Line 3..." ) );
+		}
 	}
-
-	{
-		REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
-
-		auto dt = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
-
-		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
-		REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
-	}
+	else
+		REQUIRE( true == false );
 }
