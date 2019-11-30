@@ -65,7 +65,7 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Blo
 			QTextStream s( &f );
 			TextStream stream( s );
 
-			parse( stream, doc, linksToParse, fi.filePath() + QDir::separator(), fi.fileName() );
+			parse( stream, doc, linksToParse, fi.absolutePath() + QDir::separator(), fi.fileName() );
 
 			f.close();
 
