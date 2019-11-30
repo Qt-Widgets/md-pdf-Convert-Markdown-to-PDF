@@ -61,7 +61,7 @@ TEST_CASE( "two paragraphs" )
 	auto doc = parser.parse( QLatin1String( "./test3.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 
 	{
 		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
