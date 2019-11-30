@@ -793,3 +793,76 @@ TEST_CASE( "quote with spaces" )
 	REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
 	REQUIRE( t->text() == QLatin1String( "Nested quote" ) );
 }
+
+TEST_CASE( "two quotes" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test19.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 2 );
+
+	for( int i = 0; i < 2; ++i )
+	{
+		REQUIRE( doc->items().at( i )->type() == MD::ItemType::Blockquote );
+
+		auto bq = static_cast< MD::Blockquote* > ( doc->items().at( i ).data() );
+
+		REQUIRE( !bq->isEmpty() );
+		REQUIRE( bq->items().size() == 3 );
+
+		{
+			REQUIRE( bq->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( bq->items().at( 0 ).data() );
+
+			REQUIRE( !p->isEmpty() );
+			REQUIRE( p->items().size() == 1 );
+
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Quote paragraph 1." ) );
+		}
+
+		{
+			REQUIRE( bq->items().at( 1 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( bq->items().at( 1 ).data() );
+
+			REQUIRE( !p->isEmpty() );
+			REQUIRE( p->items().size() == 1 );
+
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Quote paragraph 2." ) );
+		}
+
+		REQUIRE( bq->items().at( 2 )->type() == MD::ItemType::Blockquote );
+
+		auto nbq = static_cast< MD::Blockquote* > ( bq->items().at( 2 ).data() );
+
+		REQUIRE( !nbq->isEmpty() );
+		REQUIRE( nbq->items().size() == 1 );
+
+		REQUIRE( nbq->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( nbq->items().at( 0 ).data() );
+
+		REQUIRE( !p->isEmpty() );
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( t->text() == QLatin1String( "Nested quote" ) );
+	}
+}
