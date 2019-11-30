@@ -291,7 +291,7 @@ private:
 		{
 		}
 
-		bool atEnd() const { return ( m_stream.size() > m_pos ); }
+		bool atEnd() const { return ( m_pos >= m_stream.size() ); }
 		QString readLine() { return m_stream.at( m_pos++ ); }
 
 	private:
