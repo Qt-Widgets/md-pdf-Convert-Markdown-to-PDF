@@ -299,6 +299,63 @@ private:
 		int m_pos;
 	}; // class StringListStream
 
+	//! Wrapper for QTextStream.
+	class TextStream final
+	{
+	public:
+		TextStream( QTextStream & stream )
+			:	m_stream( stream )
+		{
+		}
+
+		bool atEnd() const { return ( m_stream.atEnd() ); }
+		QString readLine()
+		{
+			QString line;
+			bool rFound = false;
+
+			QChar c = m_buf;
+			m_buf = QChar();
+
+			while( !m_stream.atEnd() )
+			{
+				if( !c.isNull() )
+					line.append( c );
+
+				m_stream >> c;
+
+				if( rFound && c != QLatin1Char( '\n' ) )
+				{
+					m_buf = c;
+
+					return line;
+				}
+
+				if( c == QLatin1Char( '\r' ) )
+					rFound = true;
+				else if( c == QLatin1Char( '\n' ) )
+				{
+					m_buf = QChar();
+
+					return line;
+				}
+
+				if( !c.isNull() )
+				{
+					line.append( c );
+
+					c = QChar();
+				}
+			}
+
+			return line;
+		}
+
+	private:
+		QTextStream & m_stream;
+		QChar m_buf;
+	}; // class QTextStream
+
 private:
 	QStringList m_parsedFiles;
 

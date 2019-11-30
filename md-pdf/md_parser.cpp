@@ -58,13 +58,14 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Blo
 	{
 		QFile f( fileName );
 
-		if( f.open( QIODevice::ReadOnly | QIODevice::Text ) )
+		if( f.open( QIODevice::ReadOnly ) )
 		{
 			QStringList linksToParse;
 
 			QTextStream s( &f );
+			TextStream stream( s );
 
-			parse( s, doc, linksToParse, fi.filePath() + QDir::separator(), fi.fileName() );
+			parse( stream, doc, linksToParse, fi.filePath() + QDir::separator(), fi.fileName() );
 
 			f.close();
 
@@ -764,6 +765,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					finished = true;
 
+					++i;
+
 					break;
 				}
 				else if( i + 1 < length && line[ i + 1 ] == QLatin1Char( '`' ) )
@@ -869,19 +872,19 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseImg( i, line, text );
+					i = parseImg( i, line, text ) - 1;
 				}
 				else if( line[ i ] == QLatin1Char( '[' ) )
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseLnk( i, line, text );
+					i = parseLnk( i, line, text ) - 1;
 				}
 				else if( line[ i ] == QLatin1Char( '`' ) )
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseCode( i, line, prev );
+					i = parseCode( i, line, prev ) - 1;
 
 					if( prev != LineParsingState::Finished )
 						return prev;
@@ -890,7 +893,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseUrl( i, line, text );
+					i = parseUrl( i, line, text ) - 1;
 				}
 				else if( line[ i ] == QLatin1Char( '*' ) || line[ i ] == QLatin1Char( '_' ) )
 				{
@@ -1047,7 +1050,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						++data.processedText;
 					}
 
-					++it;
+					if( c->text().endsWith( QLatin1Char( ' ' ) ) )
+						c->setText( c->text().left( c->text().length() - 1 ) );
 
 					parent->appendItem( c );
 				}
@@ -1098,10 +1102,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				break;
 
 			case Lex::Code :
-			{
-				parent->appendItem( data.code[ data.processedCode ] );
 				++data.processedCode;
-			}
 				break;
 
 			case Lex::FootnoteRef :

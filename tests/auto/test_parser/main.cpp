@@ -399,3 +399,127 @@ TEST_CASE( "it's not a formatting" )
 		REQUIRE( dt->text() == QLatin1String( "Line 3...*__" ) );
 	}
 }
+
+TEST_CASE( "code" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test11.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 1 );
+
+	REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Code );
+
+	auto c = static_cast< MD::Code* > ( dp->items().at( 0 ).data() );
+
+	REQUIRE( c->inlined() == true );
+	REQUIRE( c->text() == QLatin1String( "code" ) );
+}
+
+TEST_CASE( "code in text" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test12.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 3 );
+
+	REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+	auto t1 = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+	REQUIRE( t1->text() == QLatin1String( "Code in the" ) );
+
+	REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Code );
+
+	auto c = static_cast< MD::Code* > ( dp->items().at( 1 ).data() );
+
+	REQUIRE( c->inlined() == true );
+	REQUIRE( c->text() == QLatin1String( "text" ) );
+
+	REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
+
+	auto t2 = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
+
+	REQUIRE( t2->text() == QLatin1String( "." ) );
+}
+
+TEST_CASE( "multilined inline code" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test13.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 1 );
+
+	REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Code );
+
+	auto c = static_cast< MD::Code* > ( dp->items().at( 0 ).data() );
+
+	REQUIRE( c->inlined() == true );
+	REQUIRE( c->text() == QLatin1String( "Use this `code` in the code" ) );
+}
+
+TEST_CASE( "three lines with \\r" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test14.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 3 );
+
+	{
+		REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 1..." ) );
+	}
+
+	{
+		REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 1 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 2..." ) );
+	}
+
+	{
+		REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
+
+		auto dt = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
+
+		REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+		REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
+	}
+}
