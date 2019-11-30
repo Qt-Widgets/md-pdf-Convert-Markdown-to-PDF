@@ -600,3 +600,56 @@ TEST_CASE( "three paragraphs with \\r" )
 	else
 		REQUIRE( true == false );
 }
+
+TEST_CASE( "and this is one paragraph" )
+{
+	MD::Parser parser;
+
+	QFile f( "./test16.md" );
+
+	if( f.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+	{
+		f.write( "Line 1...\r\nLine 2...\r\nLine 3...\r\n" );
+		f.close();
+
+		auto doc = parser.parse( QLatin1String( "./test16.md" ) );
+
+		REQUIRE( doc->isEmpty() == false );
+		REQUIRE( doc->items().size() == 1 );
+
+		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+		REQUIRE( dp->items().size() == 3 );
+
+		{
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 1..." ) );
+		}
+
+		{
+			REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 1 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 2..." ) );
+		}
+
+		{
+			REQUIRE( dp->items().at( 2 )->type() == MD::ItemType::Text );
+
+			auto dt = static_cast< MD::Text* > ( dp->items().at( 2 ).data() );
+
+			REQUIRE( dt->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( dt->text() == QLatin1String( "Line 3..." ) );
+		}
+	}
+	else
+		REQUIRE( true == false );
+}
