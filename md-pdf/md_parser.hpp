@@ -273,6 +273,8 @@ private:
 
 				pf();
 			}
+			else
+				fragment.append( line );
 		}
 
 		if( !fragment.isEmpty() )
