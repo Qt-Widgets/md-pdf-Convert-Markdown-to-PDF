@@ -290,7 +290,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
 
 {
-	static const QString specialChars( QLatin1String( "\\`*_{}[]()#+-.!|" ) );
+	static const QString specialChars( QLatin1String( "\\`*_{}[]()#+-.!|~" ) );
 
 	enum class Lex {
 		Bold,
@@ -858,7 +858,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			for( int i = pos, length = line.length(); i < length; ++i )
 			{
 				if( line[ i ] == QLatin1Char( '\\' ) && i + 1 < length &&
-					specialChars.contains( line[ i + 1] ) )
+					specialChars.contains( line[ i + 1 ] ) )
 				{
 					++i;
 
