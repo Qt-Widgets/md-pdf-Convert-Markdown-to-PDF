@@ -89,14 +89,14 @@ Parser::BlockType
 Parser::whatIsTheLine( const QString & str, bool inList ) const
 {
 	const auto s = str.simplified();
-	static const QRegExp olr( QLatin1String( "^\\d+\\..*" ) );
+	static const QRegExp olr( QLatin1String( "^\\d+\\.\\s+.*" ) );
 
 	if( inList )
 	{
-		if( s.startsWith( QLatin1Char( '-' ) ) ||
+		if( ( ( s.startsWith( QLatin1Char( '-' ) ) ||
 			s.startsWith( QLatin1Char( '+' ) ) ||
-			s.startsWith( QLatin1Char( '*' ) ) ||
-			olr.exactMatch( s ) )
+			s.startsWith( QLatin1Char( '*' ) ) ) && s.length() > 1 && s[ 1 ].isSpace() ) ||
+				olr.exactMatch( s ) )
 		{
 			return BlockType::List;
 		}
@@ -125,10 +125,10 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 	}
 	else
 	{
-		if( s.startsWith( QLatin1Char( '-' ) ) ||
+		if( ( ( s.startsWith( QLatin1Char( '-' ) ) ||
 			s.startsWith( QLatin1Char( '+' ) ) ||
-			s.startsWith( QLatin1Char( '*' ) ) ||
-			olr.exactMatch( s ) )
+			s.startsWith( QLatin1Char( '*' ) ) ) && s.length() > 1 && s[ 1 ].isSpace() ) ||
+				olr.exactMatch( s ) )
 		{
 			return BlockType::List;
 		}
@@ -902,6 +902,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						style.append( line[ i ] );
 						++i;
 					}
+
+					if( !style.isEmpty() )
+						--i;
 
 					if( style == QLatin1String( "*" ) || style == QLatin1String( "_" ) )
 					{
