@@ -27,6 +27,7 @@
 #include <doctest/doctest.h>
 
 #include <QFile>
+#include <QDir>
 
 
 TEST_CASE( "empty" )
@@ -1393,4 +1394,61 @@ TEST_CASE( "nested unordered list with paragraph and standalone paragraph" )
 
 	REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
 	REQUIRE( t->text() == QLatin1String( "Standalone paragraph" ) );
+}
+
+TEST_CASE( "three images" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test30.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 6 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+	auto t1 = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( t1->text() == QLatin1String( "Text" ) );
+
+	REQUIRE( p->items().at( 1 )->type() == MD::ItemType::Image );
+
+	auto i1 = static_cast< MD::Image* > ( p->items().at( 1 ).data() );
+
+	const QString wd = QDir().absolutePath() + QDir::separator();
+
+	REQUIRE( i1->text() == QLatin1String( "Image 1" ) );
+	REQUIRE( i1->url() == wd + QLatin1String( "a.jpg" ) );
+
+	REQUIRE( p->items().at( 2 )->type() == MD::ItemType::Text );
+
+	auto t2 = static_cast< MD::Text* > ( p->items().at( 2 ).data() );
+
+	REQUIRE( t2->text() == QLatin1String( "continue" ) );
+
+	REQUIRE( p->items().at( 3 )->type() == MD::ItemType::Image );
+
+	auto i2 = static_cast< MD::Image* > ( p->items().at( 3 ).data() );
+
+	REQUIRE( i2->text() == QLatin1String( "Image 2" ) );
+	REQUIRE( i2->url() == wd + QLatin1String( "b.png" ) );
+
+	REQUIRE( p->items().at( 4 )->type() == MD::ItemType::Text );
+
+	auto t3 = static_cast< MD::Text* > ( p->items().at( 4 ).data() );
+
+	REQUIRE( t3->text() == QLatin1String( "and" ) );
+
+	REQUIRE( p->items().at( 5 )->type() == MD::ItemType::Image );
+
+	auto i3 = static_cast< MD::Image* > ( p->items().at( 5 ).data() );
+
+	REQUIRE( i3->text() == QLatin1String( "Image 3" ) );
+	REQUIRE( i3->url() == QLatin1String( "http://www.where.com/c.jpeg" ) );
 }

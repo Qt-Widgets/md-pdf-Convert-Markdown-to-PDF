@@ -332,7 +332,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	{
 		const int length = line.length();
 
-		while( i < length || !line[ i ].isSpace() )
+		while( i < length && line[ i ].isSpace() )
 			++i;
 
 		return i;
@@ -344,14 +344,17 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		const int length = line.length();
 		QString t;
 
-		while( i < length ||
-			( line[ i ] != QLatin1Char( ']' ) && line[ i - 1 ] != QLatin1Char( '\\' ) ) )
+		while( i < length )
 		{
-			if( line[ i ] != QLatin1Char( '\\' ) )
+			if( line[ i ] != QLatin1Char( ']' ) && line[ i - 1 ] != QLatin1Char( '\\' ) )
 				t.append( line[ i ] );
+			else
+				break;
 
 			++i;
 		}
+
+		++i;
 
 		return t;
 	}; // readLinkText
@@ -445,8 +448,13 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						if( skipLnkCaption( i, line ) )
 						{
 							QSharedPointer< Image > img( new Image() );
-							img->setText( t );
-							img->setUrl( lnk );
+							img->setText( t.simplified() );
+
+							if( !QUrl( lnk ).isRelative() )
+								img->setUrl( lnk );
+							else
+								img->setUrl( workingPath + lnk );
+
 							data.img.append( img );
 							data.lexems.append( Lex::Image );
 
@@ -563,7 +571,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 					if( !url.isEmpty() )
 					{
-						if( QUrl( url ).isLocalFile() )
+						if( QUrl( url ).isRelative() )
 						{
 							QFileInfo fi( url );
 
@@ -617,7 +625,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							{
 								if( skipLnkCaption( i, line ) )
 								{
-									if( QUrl( url ).isLocalFile() )
+									if( QUrl( url ).isRelative() )
 									{
 										QFileInfo fi( url );
 
@@ -872,7 +880,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseImg( i, line, text ) - 1;
+					i = parseImg( i, line, text );
 				}
 				else if( line[ i ] == QLatin1Char( '[' ) )
 				{
