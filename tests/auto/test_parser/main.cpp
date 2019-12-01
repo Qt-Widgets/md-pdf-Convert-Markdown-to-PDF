@@ -902,3 +902,21 @@ TEST_CASE( "indented code" )
 	REQUIRE( c->text() ==
 		QLatin1String( "if( a > b )\n  do_something();\nelse\n  dont_do_anything();" ) );
 }
+
+TEST_CASE( "indented by tabs code" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test22.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Code );
+
+	auto c = static_cast< MD::Code* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( c->inlined() == false );
+	REQUIRE( c->text() ==
+		QLatin1String( "if( a > b )\n  do_something();\nelse\n  dont_do_anything();" ) );
+}
