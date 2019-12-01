@@ -1176,8 +1176,8 @@ Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
 				parseListItem( listItem, list, linksToParse, workingPath, fileName );
 				listItem.clear();
 			}
-			else
-				listItem.append( *it );
+
+			listItem.append( *it );
 		}
 
 		if( !listItem.isEmpty() )
