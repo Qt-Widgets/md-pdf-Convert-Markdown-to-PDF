@@ -1510,3 +1510,28 @@ TEST_CASE( "links" )
 	REQUIRE( doc->labeledLinks().contains( label ) );
 	REQUIRE( doc->labeledLinks()[ label ]->url() == QLatin1String( "http://www.where.com/a.md" ) );
 }
+
+TEST_CASE( "quoted code" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test32.md" ) );
+
+	const QString wd = QDir().absolutePath() + QDir::separator();
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 1 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Code );
+
+	auto c = static_cast< MD::Code* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( c->inlined() == true );
+	REQUIRE( c->text() == QLatin1String( "Use `code` in your Markdown file." ) );
+}
