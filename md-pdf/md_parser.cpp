@@ -1276,7 +1276,12 @@ Parser::parseCodeIndentedBySpaces( QStringList & fr, QSharedPointer< Block > par
 		code.append( ( indent > 0 ? l.right( l.length() - indent ) + QLatin1Char( '\n' ) :
 			l + QLatin1Char( '\n' ) ) );
 
-	parent->appendItem( QSharedPointer< Item > ( new Code( code ) ) );
+	if( !code.isEmpty() )
+	{
+		code = code.left( code.length() - 1 );
+
+		parent->appendItem( QSharedPointer< Item > ( new Code( code ) ) );
+	}
 }
 
 } /* namespace MD */
