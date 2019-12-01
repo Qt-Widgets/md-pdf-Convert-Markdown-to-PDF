@@ -1452,3 +1452,61 @@ TEST_CASE( "three images" )
 	REQUIRE( i3->text() == QLatin1String( "Image 3" ) );
 	REQUIRE( i3->url() == QLatin1String( "http://www.where.com/c.jpeg" ) );
 }
+
+TEST_CASE( "links" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test31.md" ) );
+
+	const QString wd = QDir().absolutePath() + QDir::separator();
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 4 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+
+	auto l1 = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( l1->text() == QLatin1String( "link 1" ) );
+	REQUIRE( l1->url() == ( wd + QLatin1String( "a.md" ) ) );
+
+	REQUIRE( p->items().at( 1 )->type() == MD::ItemType::Link );
+
+	auto l2 = static_cast< MD::Link* > ( p->items().at( 1 ).data() );
+
+	REQUIRE( l2->text().isEmpty() );
+	REQUIRE( l2->url() == wd + QLatin1String( "b.md" ) );
+	REQUIRE( l2->textOptions() == MD::TextOption::TextWithoutFormat );
+
+	REQUIRE( !l2->img().isNull() );
+	REQUIRE( l2->img()->text() == QLatin1String( "image 1" ) );
+	REQUIRE( l2->img()->url() == wd + QLatin1String( "a.png" ) );
+
+	REQUIRE( p->items().at( 2 )->type() == MD::ItemType::Link );
+
+	auto l3 = static_cast< MD::Link* > ( p->items().at( 2 ).data() );
+
+	REQUIRE( l3->text() == QLatin1String( "link 3" ) );
+
+	const QString label = QString::fromLatin1( "#label/" ) + wd + QLatin1String( "test31.md" );
+
+	REQUIRE( l3->url() == label );
+
+	REQUIRE( p->items().at( 3 )->type() == MD::ItemType::FootnoteRef );
+
+	auto f1 = static_cast< MD::FootnoteRef* > ( p->items().at( 3 ).data() );
+
+	REQUIRE( f1->id() ==
+		QString::fromLatin1( "ref" ) + QDir::separator() + wd + QLatin1String( "test31.md" ) );
+
+	REQUIRE( !doc->labeledLinks().isEmpty() );
+	REQUIRE( doc->labeledLinks().contains( label ) );
+	REQUIRE( doc->labeledLinks()[ label ]->url() == QLatin1String( "http://www.where.com/a.md" ) );
+}

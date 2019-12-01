@@ -280,7 +280,7 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 
 	QSharedPointer< Paragraph > p( new Paragraph() );
 
-	parseFormattedTextLinksImages( fr, p, linksToParse, workingPath, fileName );
+	parseFormattedTextLinksImages( fr, p, parent, linksToParse, workingPath, fileName );
 
 	if( !p->isEmpty() )
 		parent->appendItem( p );
@@ -288,7 +288,8 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 
 void
 Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Block > parentOfParent, QStringList & linksToParse, const QString & workingPath,
+	const QString & fileName )
 
 {
 	static const QString specialChars( QLatin1String( "\\`*_{}[]()#+-.!|~<>" ) );
@@ -422,8 +423,19 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		return false;
 	}; // skipLnkCaption
 
+	// Add footnote ref.
+	auto addFootnoteRef = [&]( const QString & lnk )
+	{
+		QSharedPointer< FootnoteRef > fnr(
+			new FootnoteRef( lnk + QDir::separator() + workingPath + fileName ) );
+
+		data.fnref.append( fnr );
+		data.lexems.append( Lex::FootnoteRef );
+	}; // addFootnoteRef
+
 	// Read image.
-	auto parseImg = [&]( int i, const QString & line, QString & text, bool * ok = nullptr ) -> int
+	auto parseImg = [&]( int i, const QString & line, QString & text, bool * ok = nullptr,
+		bool addLex = true ) -> int
 	{
 		const int start = i;
 		i += 2;
@@ -456,7 +468,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 								img->setUrl( workingPath + lnk );
 
 							data.img.append( img );
-							data.lexems.append( Lex::Image );
+
+							if( addLex )
+								data.lexems.append( Lex::Image );
 
 							if( ok )
 								*ok = true;
@@ -495,7 +509,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 				QString tmp;
 
-				i = parseImg( i, line, tmp, &ok );
+				i = parseImg( i, line, tmp, &ok, false ) + 1;
 
 				if( !ok )
 				{
@@ -504,24 +518,47 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					return i;
 				}
 				else
+				{
 					withImage = true;
+
+					i = skipSpaces( i, line );
+
+					if( line[ i ] == QLatin1Char( ']' ) )
+						++i;
+					else
+					{
+						text.append( line.mid( startPos, length - i ) );
+
+						return i;
+					}
+				}
 			}
 			else if( line[ i ] == QLatin1Char( '^' ) )
 			{
-				++i;
 				auto lnk = readLnk( i, line );
 
 				i = skipSpaces( i, line );
 
 				if( i < length && line[ i ] == QLatin1Char( ']' ) )
 				{
-					if( i + 1 < length && line[ i + 1 ] != QLatin1Char( ':' ) )
+					if( i + 1 < length )
 					{
-						QSharedPointer< FootnoteRef > fnr(
-							new FootnoteRef( lnk + QDir::separator() + workingPath + fileName ) );
+						if( line[ i + 1 ] != QLatin1Char( ':' ) )
+						{
+							addFootnoteRef( lnk );
 
-						data.fnref.append( fnr );
-						data.lexems.append( Lex::FootnoteRef );
+							return i + 1;
+						}
+						else
+						{
+							text.append( line.mid( startPos, length - i + 1 ) );
+
+							return i + 1;
+						}
+					}
+					else
+					{
+						addFootnoteRef( lnk );
 
 						return i + 1;
 					}
@@ -581,12 +618,12 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							linksToParse.append( url );
 						}
 
-						if( parent->type() == ItemType::Document )
+						if( parentOfParent->type() == ItemType::Document )
 						{
 							QSharedPointer< Link > lnk( new Link() );
 							lnk->setUrl( url );
 
-							static_cast< Document* > ( parent.data() )->insertLabeledLink(
+							static_cast< Document* > ( parentOfParent.data() )->insertLabeledLink(
 								QString::fromLatin1( "#" ) + lnkText +
 								QDir::separator() + workingPath + fileName, lnk );
 						}
@@ -886,7 +923,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseLnk( i, line, text ) - 1;
+					i = parseLnk( i, line, text );
 				}
 				else if( line[ i ] == QLatin1Char( '`' ) )
 				{

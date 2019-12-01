@@ -90,6 +90,7 @@ private:
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Block > parentOfParent,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 
