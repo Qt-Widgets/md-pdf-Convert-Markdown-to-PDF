@@ -1243,14 +1243,21 @@ Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 			break;
 		}
 		else
+		{
+			if( it->startsWith( QLatin1String( "    " ) ) )
+				*it = it->right( it->length() - 4 );
+			else if( it->startsWith( QLatin1Char( '\t' ) ) )
+				*it = it->right( it->length() - 1 );
+
 			data.append( *it );
+		}
 	}
 
 	if( !data.isEmpty() )
 	{
 		StringListStream stream( data );
 
-		parse( stream, item, linksToParse, workingPath, fileName );
+		parse( stream, item, linksToParse, workingPath, fileName, true );
 	}
 
 	if( !item->isEmpty() )

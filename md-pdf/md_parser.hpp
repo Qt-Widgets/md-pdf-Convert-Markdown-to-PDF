@@ -242,6 +242,7 @@ private:
 					line.startsWith( QLatin1Char( '\t' ) )  ||
 					lineType == BlockType::List )
 				{
+					fragment.append( QString() );
 					fragment.append( line );
 
 					emptyLineInList = false;
