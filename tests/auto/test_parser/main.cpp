@@ -1580,3 +1580,112 @@ TEST_CASE( "styled link" )
 	REQUIRE( l->text() == QLatin1String( "Google" ) );
 	REQUIRE( l->textOptions() == MD::TextOption::BoldText );
 }
+
+TEST_CASE( "ordered list" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test35.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+
+	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( l->items().size() == 3 );
+
+	{
+		REQUIRE( l->items().at( 0 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 0 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Start );
+		REQUIRE( i1->items().size() == 1 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "1" ) );
+	}
+
+	REQUIRE( l->items().size() == 3 );
+
+	{
+		REQUIRE( l->items().at( 1 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 1 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+		REQUIRE( i1->items().size() == 2 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "2" ) );
+
+		REQUIRE( i1->items().at( 1 )->type() == MD::ItemType::List );
+
+		auto nl = static_cast< MD::List* > ( i1->items().at( 1 ).data() );
+
+		REQUIRE( nl->items().size() == 2 );
+
+		{
+			REQUIRE( nl->items().at( 0 )->type() == MD::ItemType::ListItem );
+
+			auto i1 = static_cast< MD::ListItem* > ( nl->items().at( 0 ).data() );
+
+			REQUIRE( i1->listType() == MD::ListItem::Ordered );
+			REQUIRE( i1->orderedListPreState() == MD::ListItem::Start );
+			REQUIRE( i1->items().size() == 1 );
+			REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+			REQUIRE( p->items().size() == 1 );
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+			REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "1" ) );
+		}
+
+		{
+			REQUIRE( nl->items().at( 1 )->type() == MD::ItemType::ListItem );
+
+			auto i1 = static_cast< MD::ListItem* > ( nl->items().at( 1 ).data() );
+
+			REQUIRE( i1->listType() == MD::ListItem::Ordered );
+			REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+			REQUIRE( i1->items().size() == 1 );
+			REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+			REQUIRE( p->items().size() == 1 );
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+			REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "2" ) );
+		}
+	}
+
+	{
+		REQUIRE( l->items().at( 2 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 2 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+		REQUIRE( i1->items().size() == 1 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "3" ) );
+	}
+}
