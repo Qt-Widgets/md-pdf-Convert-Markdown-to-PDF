@@ -449,7 +449,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	}; // addFootnoteRef
 
 	// Read image.
-	auto parseImg = [&]( int i, const QString & line, QString & text, bool * ok = nullptr,
+	auto parseImg = [&]( int i, const QString & line, bool * ok = nullptr,
 		bool addLex = true ) -> int
 	{
 		const int start = i;
@@ -497,7 +497,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			}
 		}
 
-		text.append( line.mid( start, i - start ) );
+		if( ok )
+			*ok = false;
 
 		return i;
 	}; // parseImg
@@ -524,7 +525,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 				QString tmp;
 
-				i = parseImg( i, line, tmp, &ok, false ) + 1;
+				i = parseImg( i, line, &ok, false ) + 1;
 
 				if( !ok )
 				{
@@ -940,7 +941,15 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				{
 					createTextObj( text.simplified() );
 					text.clear();
-					i = parseImg( i, line, text );
+
+					bool ok = false;
+
+					const int startPos = i;
+
+					i = parseImg( i, line, &ok );
+
+					if( !ok )
+						text.append( line.mid( startPos, i - startPos ) );
 				}
 				else if( line[ i ] == QLatin1Char( '[' ) )
 				{
