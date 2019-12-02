@@ -305,7 +305,6 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		ImageInLink,
 		StartOfCode,
 		StartOfQuotedCode,
-		Code,
 		FootnoteRef,
 		BreakLine
 	}; // enum class Lex
@@ -315,13 +314,11 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 		QVector< QSharedPointer< Text > > txt;
 		QVector< QSharedPointer< Link > > lnk;
-		QVector< QSharedPointer< Code > > code;
 		QVector< QSharedPointer< FootnoteRef > > fnref;
 		QVector< QSharedPointer< Image > > img;
 
 		int processedText = 0;
 		int processedLnk = 0;
-		int processedCode = 0;
 		int processedFnRef = 0;
 		int processedImg = 0;
 	}; // struct PreparsedData
@@ -1135,10 +1132,6 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				parent->appendItem( data.lnk[ data.processedLnk ] );
 				++data.processedLnk;
 			}
-				break;
-
-			case Lex::Code :
-				++data.processedCode;
 				break;
 
 			case Lex::FootnoteRef :

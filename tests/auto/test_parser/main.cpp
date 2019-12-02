@@ -1992,3 +1992,162 @@ TEST_CASE( "wrong links" )
 		REQUIRE( t->text() == QLatin1String( "<www.google.com" ) );
 	}
 }
+
+TEST_CASE( "ordered list with tabs" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test38.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+
+	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( l->items().size() == 3 );
+
+	{
+		REQUIRE( l->items().at( 0 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 0 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Start );
+		REQUIRE( i1->items().size() == 1 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "1" ) );
+	}
+
+	REQUIRE( l->items().size() == 3 );
+
+	{
+		REQUIRE( l->items().at( 1 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 1 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+		REQUIRE( i1->items().size() == 2 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "2" ) );
+
+		REQUIRE( i1->items().at( 1 )->type() == MD::ItemType::List );
+
+		auto nl = static_cast< MD::List* > ( i1->items().at( 1 ).data() );
+
+		REQUIRE( nl->items().size() == 2 );
+
+		{
+			REQUIRE( nl->items().at( 0 )->type() == MD::ItemType::ListItem );
+
+			auto i1 = static_cast< MD::ListItem* > ( nl->items().at( 0 ).data() );
+
+			REQUIRE( i1->listType() == MD::ListItem::Ordered );
+			REQUIRE( i1->orderedListPreState() == MD::ListItem::Start );
+			REQUIRE( i1->items().size() == 1 );
+			REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+			REQUIRE( p->items().size() == 1 );
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+			REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "1" ) );
+		}
+
+		{
+			REQUIRE( nl->items().at( 1 )->type() == MD::ItemType::ListItem );
+
+			auto i1 = static_cast< MD::ListItem* > ( nl->items().at( 1 ).data() );
+
+			REQUIRE( i1->listType() == MD::ListItem::Ordered );
+			REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+			REQUIRE( i1->items().size() == 1 );
+			REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+			REQUIRE( p->items().size() == 1 );
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+			REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "2" ) );
+		}
+	}
+
+	{
+		REQUIRE( l->items().at( 2 )->type() == MD::ItemType::ListItem );
+
+		auto i1 = static_cast< MD::ListItem* > ( l->items().at( 2 ).data() );
+
+		REQUIRE( i1->listType() == MD::ListItem::Ordered );
+		REQUIRE( i1->orderedListPreState() == MD::ListItem::Continue );
+		REQUIRE( i1->items().size() == 1 );
+		REQUIRE( i1->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( i1->items().at( 0 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "3" ) );
+	}
+}
+
+TEST_CASE( "wrong style" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test39.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	
+	REQUIRE( p->items().size() == 1 );
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+	
+	auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+	
+	REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+	REQUIRE( t->text() == QLatin1String( "****text****" ) );
+}
+
+TEST_CASE( "unfinished code" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test40.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+
+	REQUIRE( dp->items().size() == 2 );
+
+	REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+	auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+	REQUIRE( t->text() == QLatin1String( "``Use this `code`" ) );
+	
+	REQUIRE( dp->items().at( 1 )->type() == MD::ItemType::Text );
+
+	t = static_cast< MD::Text* > ( dp->items().at( 1 ).data() );
+
+	REQUIRE( t->text() == QLatin1String( "in the code" ) );
+}
