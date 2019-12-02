@@ -1737,7 +1737,7 @@ TEST_CASE( "wrong links" )
 	auto doc = parser.parse( QLatin1String( "./test37.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 9 );
+	REQUIRE( doc->items().size() == 11 );
 
 	{
 		REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
@@ -1869,5 +1869,33 @@ TEST_CASE( "wrong links" )
 		t = static_cast< MD::Text* > ( p->items().at( 1 ).data() );
 
 		REQUIRE( t->text() == QLatin1String( "[^ref]:" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 9 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 9 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[^ref" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 10 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 10 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[" ) );
 	}
 }
