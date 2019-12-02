@@ -603,42 +603,31 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 		{
 			if( line[ i ] == QLatin1Char( ':' ) )
 			{
-				i = skipSpaces( i, line );
+				url = readLnk( i, line );
 
-				if( i < length )
+				if( !url.isEmpty() )
 				{
-					url = readLnk( i, line );
-
-					if( !url.isEmpty() )
+					if( QUrl( url ).isRelative() )
 					{
-						if( QUrl( url ).isRelative() )
+						if( fileExists( url, workingPath ) )
 						{
-							if( fileExists( url, workingPath ) )
-							{
-								url = workingPath + url;
+							url = workingPath + url;
 
-								linksToParse.append( url );
-							}
+							linksToParse.append( url );
 						}
-
-						if( parentOfParent->type() == ItemType::Document )
-						{
-							QSharedPointer< Link > lnk( new Link() );
-							lnk->setUrl( url );
-
-							static_cast< Document* > ( parentOfParent.data() )->insertLabeledLink(
-								QString::fromLatin1( "#" ) + lnkText +
-								QDir::separator() + workingPath + fileName, lnk );
-						}
-
-						return length;
 					}
-					else
+
+					if( parentOfParent->type() == ItemType::Document )
 					{
-						text.append( line.mid( startPos, i - startPos ) );
+						QSharedPointer< Link > lnk( new Link() );
+						lnk->setUrl( url );
 
-						return i;
+						static_cast< Document* > ( parentOfParent.data() )->insertLabeledLink(
+							QString::fromLatin1( "#" ) + lnkText +
+							QDir::separator() + workingPath + fileName, lnk );
 					}
+
+					return length;
 				}
 				else
 				{
@@ -649,49 +638,38 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			}
 			else if( line[ i ] == QLatin1Char( '(' ) )
 			{
-				i = skipSpaces( i, line );
+				url = readLnk( i, line );
 
-				if( i < length )
+				if( !url.isEmpty() && i < length )
 				{
-					url = readLnk( i, line );
-
-					if( !url.isEmpty() && i < length )
+					if( !url.startsWith( QLatin1Char( '#' ) ) )
 					{
-						if( !url.startsWith( QLatin1Char( '#' ) ) )
+						i = skipSpaces( i, line );
+
+						if( i < length )
 						{
-							i = skipSpaces( i, line );
-
-							if( i < length )
+							if( skipLnkCaption( i, line ) )
 							{
-								if( skipLnkCaption( i, line ) )
+								if( QUrl( url ).isRelative() )
 								{
-									if( QUrl( url ).isRelative() )
+									if( fileExists( url, workingPath ) )
 									{
-										if( fileExists( url, workingPath ) )
-										{
-											url = workingPath + url;
+										url = workingPath + url;
 
-											linksToParse.append( url );
-										}
+										linksToParse.append( url );
 									}
 								}
-								else
-								{
-									text.append( line.mid( startPos, i - startPos ) );
+							}
+							else
+							{
+								text.append( line.mid( startPos, i - startPos ) );
 
-									return i;
-								}
+								return i;
 							}
 						}
-						else
-							url = url + QDir::separator() + workingPath + fileName;
 					}
 					else
-					{
-						text.append( line.mid( startPos, i - startPos ) );
-
-						return i;
-					}
+						url = url + QDir::separator() + workingPath + fileName;
 				}
 				else
 				{
@@ -702,36 +680,25 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			}
 			else if( line[ i ] == QLatin1Char( '[' ) )
 			{
-				i = skipSpaces( i, line );
+				url = readLnk( i, line );
 
-				if( i < length )
+				if( !url.isEmpty() )
 				{
-					url = readLnk( i, line );
+					i = skipSpaces( i, line );
 
-					if( !url.isEmpty() )
+					if( i < length && line[ i ] == QLatin1Char( ']' ) )
 					{
-						i = skipSpaces( i, line );
+						url = QString::fromLatin1( "#" ) + url +
+							QDir::separator() + workingPath + fileName;
 
-						if( i < length && line[ i ] == QLatin1Char( ']' ) )
-						{
-							url = QString::fromLatin1( "#" ) + url +
-								QDir::separator() + workingPath + fileName;
-
-							++i;
-						}
-						else
-						{
-							text.append( line.mid( startPos, i - startPos ) );
-
-							return i;
-						}
+						++i;
 					}
-				}
-				else
-				{
-					text.append( line.mid( startPos, i - startPos ) );
+					else
+					{
+						text.append( line.mid( startPos, i - startPos ) );
 
-					return i;
+						return i;
+					}
 				}
 			}
 			else
