@@ -11,3 +11,7 @@
 ![Google](
 
 [Google] ( www.google.com "Google Shmoogle..."
+
+[![Google](https://www.google.com/logo.png)
+
+text [^ref]:

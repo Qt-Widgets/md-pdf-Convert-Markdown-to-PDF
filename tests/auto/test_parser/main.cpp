@@ -1462,7 +1462,7 @@ TEST_CASE( "links" )
 	const QString wd = QDir().absolutePath() + QDir::separator();
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
 	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
 
@@ -1509,6 +1509,23 @@ TEST_CASE( "links" )
 	REQUIRE( !doc->labeledLinks().isEmpty() );
 	REQUIRE( doc->labeledLinks().contains( label ) );
 	REQUIRE( doc->labeledLinks()[ label ]->url() == QLatin1String( "http://www.where.com/a.md" ) );
+
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+
+	p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+
+	REQUIRE( p->items().size() == 2 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::FootnoteRef );
+
+	f1 = static_cast< MD::FootnoteRef* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( f1->id() ==
+		QString::fromLatin1( "ref" ) + QDir::separator() + wd + QLatin1String( "test31.md" ) );
+
+	auto t = static_cast< MD::Text* > ( p->items().at( 1 ).data() );
+
+	REQUIRE( t->text() == QLatin1String( "text" ) );
 }
 
 TEST_CASE( "code in blockquote" )
@@ -1720,7 +1737,7 @@ TEST_CASE( "wrong links" )
 	auto doc = parser.parse( QLatin1String( "./test37.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 7 );
+	REQUIRE( doc->items().size() == 9 );
 
 	{
 		REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
@@ -1818,5 +1835,39 @@ TEST_CASE( "wrong links" )
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
 		REQUIRE( t->text() == QLatin1String( "[Google] ( www.google.com \"Google Shmoogle...\"" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 7 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 7 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[![Google](https://www.google.com/logo.png)" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 8 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 8 ).data() );
+
+		REQUIRE( p->items().size() == 2 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "text" ) );
+
+		REQUIRE( p->items().at( 1 )->type() == MD::ItemType::Text );
+
+		t = static_cast< MD::Text* > ( p->items().at( 1 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[^ref]:" ) );
 	}
 }

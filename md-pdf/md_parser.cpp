@@ -537,7 +537,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 					i = skipSpaces( i, line );
 
-					if( line[ i ] == QLatin1Char( ']' ) )
+					if( i < length && line[ i ] == QLatin1Char( ']' ) )
 						++i;
 					else
 					{
@@ -565,9 +565,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						}
 						else
 						{
-							text.append( line.mid( startPos, i - startPos + 1 ) );
+							text.append( line.mid( startPos, i - startPos + 2 ) );
 
-							return i + 1;
+							return i + 2;
 						}
 					}
 					else
