@@ -1,2 +1,4 @@
-``Use `code` in your
-Markdown file.``
+> ```cpp
+> if( a < b )
+>   do_something();
+> ```

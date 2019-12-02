@@ -1173,7 +1173,7 @@ Parser::parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
 	if( indent > -1 )
 	{
 		for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
-			*it = it->right( it->length() - indent - 1 );
+			*it = it->mid( indent + 1 );
 
 		parse( stream, bq, linksToParse, workingPath, fileName );
 	}
@@ -1312,6 +1312,13 @@ Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 void
 Parser::parseCode( QStringList & fr, QSharedPointer< Block > parent, int indent )
 {
+	static const QRegExp nonSpace( QLatin1String( "[^\\s]" ) );
+
+	const int i = nonSpace.indexIn( fr.first() );
+
+	if( i > -1 )
+		indent += i;
+
 	fr.removeFirst();
 	fr.removeLast();
 

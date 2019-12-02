@@ -1511,7 +1511,7 @@ TEST_CASE( "links" )
 	REQUIRE( doc->labeledLinks()[ label ]->url() == QLatin1String( "http://www.where.com/a.md" ) );
 }
 
-TEST_CASE( "quoted code" )
+TEST_CASE( "code in blockquote" )
 {
 	MD::Parser parser;
 
@@ -1520,18 +1520,18 @@ TEST_CASE( "quoted code" )
 	REQUIRE( doc->isEmpty() == false );
 	REQUIRE( doc->items().size() == 1 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Blockquote );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto q = static_cast< MD::Blockquote* > ( doc->items().at( 0 ).data() );
 
-	REQUIRE( p->items().size() == 1 );
+	REQUIRE( q->items().size() == 1 );
 
-	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Code );
+	REQUIRE( q->items().at( 0 )->type() == MD::ItemType::Code );
 
-	auto c = static_cast< MD::Code* > ( p->items().at( 0 ).data() );
+	auto c = static_cast< MD::Code* > ( q->items().at( 0 ).data() );
 
-	REQUIRE( c->inlined() == true );
-	REQUIRE( c->text() == QLatin1String( "Use `code` in your Markdown file." ) );
+	REQUIRE( c->inlined() == false );
+	REQUIRE( c->text() == QLatin1String( "if( a < b )\n  do_something();" ) );
 }
 
 TEST_CASE( "simple link" )
