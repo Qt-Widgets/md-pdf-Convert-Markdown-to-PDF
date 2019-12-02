@@ -432,8 +432,6 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			else if( line[ i ] == QLatin1Char( ')' ) )
 				return true;
 		}
-		else
-			return false;
 
 		return false;
 	}; // skipLnkCaption
