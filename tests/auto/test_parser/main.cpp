@@ -1526,6 +1526,11 @@ TEST_CASE( "links" )
 	auto t = static_cast< MD::Text* > ( p->items().at( 1 ).data() );
 
 	REQUIRE( t->text() == QLatin1String( "text" ) );
+	
+	REQUIRE( doc->labeledLinks().size() == 2 );
+	
+	REQUIRE( doc->labeledLinks()[ QString::fromLatin1( "#1" ) +
+		QDir::separator() + wd + QLatin1String( "test31.md" ) ]->url() == wd + QLatin1String( "a.md" ) );
 }
 
 TEST_CASE( "code in blockquote" )
@@ -1737,7 +1742,7 @@ TEST_CASE( "wrong links" )
 	auto doc = parser.parse( QLatin1String( "./test37.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 11 );
+	REQUIRE( doc->items().size() == 13 );
 
 	{
 		REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
@@ -1897,5 +1902,33 @@ TEST_CASE( "wrong links" )
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
 		REQUIRE( t->text() == QLatin1String( "[" ) );
+	}
+	
+	{
+		REQUIRE( doc->items().at( 11 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 11 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[1]:" ) );
+	}
+	
+	{
+		REQUIRE( doc->items().at( 12 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 12 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[1]:" ) );
 	}
 }

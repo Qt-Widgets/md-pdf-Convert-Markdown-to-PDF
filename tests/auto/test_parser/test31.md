@@ -3,3 +3,5 @@
 [label]: http://www.where.com/a.md caption
 
 [^ref] text
+
+[1]: a.md
