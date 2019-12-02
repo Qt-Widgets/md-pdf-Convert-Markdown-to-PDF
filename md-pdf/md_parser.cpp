@@ -586,20 +586,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			}
 			else
 			{
-				i = skipSpaces( i, line );
+				lnkText = readLinkText( i, line ).simplified();
 
-				if( i < length )
-				{
-					lnkText = readLinkText( i, line ).simplified();
-
-					if( lnkText.isEmpty() )
-					{
-						text.append( line.mid( startPos, i - startPos ) );
-
-						return i;
-					}
-				}
-				else
+				if( lnkText.isEmpty() )
 				{
 					text.append( line.mid( startPos, i - startPos ) );
 
