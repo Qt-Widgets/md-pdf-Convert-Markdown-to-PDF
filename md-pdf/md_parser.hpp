@@ -93,6 +93,7 @@ private:
 		QSharedPointer< Block > parentOfParent,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
+	bool fileExists( const QString & fileName, const QString & workingPath ) const;
 
 	template< typename STREAM >
 	void parse( STREAM & stream, QSharedPointer< Block > parent, QStringList & linksToParse,

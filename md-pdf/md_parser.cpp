@@ -465,7 +465,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 							if( !QUrl( lnk ).isRelative() )
 								img->setUrl( lnk );
 							else
-								img->setUrl( workingPath + lnk );
+								img->setUrl( fileExists( lnk, workingPath ) ? workingPath + lnk : lnk );
 
 							data.img.append( img );
 
@@ -610,12 +610,12 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					{
 						if( QUrl( url ).isRelative() )
 						{
-							QFileInfo fi( url );
-
-							if( fi.isRelative() )
+							if( fileExists( url, workingPath ) )
+							{
 								url = workingPath + url;
 
-							linksToParse.append( url );
+								linksToParse.append( url );
+							}
 						}
 
 						if( parentOfParent->type() == ItemType::Document )
@@ -664,12 +664,12 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 								{
 									if( QUrl( url ).isRelative() )
 									{
-										QFileInfo fi( url );
-
-										if( fi.isRelative() )
+										if( fileExists( url, workingPath ) )
+										{
 											url = workingPath + url;
 
-										linksToParse.append( url );
+											linksToParse.append( url );
+										}
 									}
 								}
 							}
@@ -1341,6 +1341,12 @@ Parser::parseCodeIndentedBySpaces( QStringList & fr, QSharedPointer< Block > par
 
 		parent->appendItem( QSharedPointer< Item > ( new Code( code ) ) );
 	}
+}
+
+bool
+Parser::fileExists( const QString & fileName, const QString & workingPath ) const
+{
+	return QFileInfo::exists( workingPath + fileName );
 }
 
 } /* namespace MD */

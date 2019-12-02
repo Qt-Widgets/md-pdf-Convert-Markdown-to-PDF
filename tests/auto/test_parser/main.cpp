@@ -1556,3 +1556,27 @@ TEST_CASE( "simple link" )
 	REQUIRE( l->url() == QLatin1String( "www.google.com" ) );
 	REQUIRE( l->text().isEmpty() );
 }
+
+TEST_CASE( "styled link" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test34.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 1 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+
+	auto l = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( l->url() == QLatin1String( "https://www.google.com" ) );
+	REQUIRE( l->text() == QLatin1String( "Google" ) );
+	REQUIRE( l->textOptions() == MD::TextOption::BoldText );
+}
