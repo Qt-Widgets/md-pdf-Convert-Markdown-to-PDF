@@ -811,6 +811,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 		if( finished )
 			data.lexems.append( quoted ? Lex::StartOfQuotedCode : Lex::StartOfCode );
+		else
+			prevAndNext = ( quoted ? LineParsingState::UnfinishedQuotedCode :
+				LineParsingState::UnfinishedCode );
 
 		return i;
 	}; // parseCode
