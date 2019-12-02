@@ -408,6 +408,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 		if( quoted )
 		{
+			++i;
+
 			i = skipSpaces( i, line );
 
 			if( line[ i ] == QLatin1Char( ')' ) )

@@ -1689,3 +1689,26 @@ TEST_CASE( "ordered list" )
 		REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() == QLatin1String( "3" ) );
 	}
 }
+
+TEST_CASE( "link with caption" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test36.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 1 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+
+	auto l = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( l->url() == QLatin1String( "www.google.com" ) );
+	REQUIRE( l->text() == QLatin1String( "Google" ) );
+}
