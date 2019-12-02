@@ -357,7 +357,10 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 		++i;
 
-		return t;
+		if( i - 1 < length && line[ i - 1 ] == QLatin1Char( ']' ) )
+			return t;
+		else
+			return QString();
 	}; // readLinkText
 
 	// Read URL.
@@ -406,21 +409,31 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			++i;
 		}
 
-		if( quoted )
+		if( i < length )
 		{
-			++i;
-
-			i = skipSpaces( i, line );
-
-			if( line[ i ] == QLatin1Char( ')' ) )
+			if( quoted )
 			{
 				++i;
 
-				return true;
+				i = skipSpaces( i, line );
+
+				if( i < length )
+				{
+					if( line[ i ] == QLatin1Char( ')' ) )
+					{
+						++i;
+
+						return true;
+					}
+				}
+				else
+					return false;
 			}
+			else if( line[ i ] == QLatin1Char( ')' ) )
+				return true;
 		}
-		else if( line[ i ] == QLatin1Char( ')' ) )
-			return true;
+		else
+			return false;
 
 		return false;
 	}; // skipLnkCaption
@@ -674,6 +687,12 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 										}
 									}
 								}
+								else
+								{
+									text.append( line.mid( startPos, i - startPos ) );
+
+									return i;
+								}
 							}
 						}
 						else
@@ -740,6 +759,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 			if( withImage )
 				data.img.removeLast();
+
+			return i;
 		}
 
 		QSharedPointer< Link > lnk( new Link() );
