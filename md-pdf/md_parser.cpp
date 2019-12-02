@@ -821,6 +821,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	// Read URL in <...>
 	auto parseUrl = [&]( int i, const QString & line, QString & text ) -> int
 	{
+		const int start = i;
+		
 		++i;
 
 		const int length = line.length();
@@ -850,7 +852,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			data.lexems.append( Lex::Link );
 		}
 		else
-			text.append( QString::fromLatin1( "<" ) + url );
+			text.append( line.mid( start, i - start ) );
 
 		return i;
 	}; // parseUrl

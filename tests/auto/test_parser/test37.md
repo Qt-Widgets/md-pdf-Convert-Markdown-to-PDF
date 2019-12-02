@@ -27,3 +27,5 @@ text [^ref]:
 [text][link
 
 [text]#
+
+<www.google.com

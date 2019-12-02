@@ -1760,7 +1760,7 @@ TEST_CASE( "wrong links" )
 	auto doc = parser.parse( QLatin1String( "./test37.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 15 );
+	REQUIRE( doc->items().size() == 16 );
 
 	{
 		REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
@@ -1976,5 +1976,19 @@ TEST_CASE( "wrong links" )
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
 		REQUIRE( t->text() == QLatin1String( "[text]#" ) );
+	}
+	
+	{
+		REQUIRE( doc->items().at( 15 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 15 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "<www.google.com" ) );
 	}
 }
