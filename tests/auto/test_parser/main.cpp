@@ -1495,7 +1495,8 @@ TEST_CASE( "links" )
 
 	REQUIRE( l3->text() == QLatin1String( "link 3" ) );
 
-	const QString label = QString::fromLatin1( "#label/" ) + wd + QLatin1String( "test31.md" );
+	const QString label = QString::fromLatin1( "#label" ) + QDir::separator() +
+		wd + QLatin1String( "test31.md" );
 
 	REQUIRE( l3->url() == label );
 
