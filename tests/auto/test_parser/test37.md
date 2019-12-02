@@ -23,3 +23,7 @@ text [^ref]:
 [1]:
 
 [1]: 
+
+[text][link
+
+[text]#

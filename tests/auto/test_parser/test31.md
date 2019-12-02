@@ -5,3 +5,5 @@
 [^ref] text
 
 [1]: a.md
+
+[link 4](#label)

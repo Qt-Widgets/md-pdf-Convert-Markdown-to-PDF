@@ -703,9 +703,9 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 			}
 			else
 			{
-				text.append( line.mid( startPos, i - startPos ) );
+				text.append( line.mid( startPos, i - startPos + 1 ) );
 
-				return i;
+				return i + 1;
 			}
 		}
 		else
