@@ -1275,8 +1275,6 @@ Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 		{
 			if( it->startsWith( QLatin1String( "    " ) ) )
 				*it = it->right( it->length() - 4 );
-			else if( it->startsWith( QLatin1Char( '\t' ) ) )
-				*it = it->right( it->length() - 1 );
 
 			data.append( *it );
 		}
