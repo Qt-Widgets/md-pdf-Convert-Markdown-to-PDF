@@ -1517,8 +1517,6 @@ TEST_CASE( "quoted code" )
 
 	auto doc = parser.parse( QLatin1String( "./test32.md" ) );
 
-	const QString wd = QDir().absolutePath() + QDir::separator();
-
 	REQUIRE( doc->isEmpty() == false );
 	REQUIRE( doc->items().size() == 1 );
 
@@ -1534,4 +1532,27 @@ TEST_CASE( "quoted code" )
 
 	REQUIRE( c->inlined() == true );
 	REQUIRE( c->text() == QLatin1String( "Use `code` in your Markdown file." ) );
+}
+
+TEST_CASE( "simple link" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test33.md" ) );
+
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( p->items().size() == 1 );
+
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+
+	auto l = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+
+	REQUIRE( l->url() == QLatin1String( "www.google.com" ) );
+	REQUIRE( l->text().isEmpty() );
 }
