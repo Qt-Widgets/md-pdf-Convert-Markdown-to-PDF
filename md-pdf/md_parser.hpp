@@ -46,7 +46,7 @@ public:
 	QSharedPointer< Document > parse( const QString & fileName, bool recursive = true );
 
 private:
-	void parseFile( const QString & fileName, bool recursive, QSharedPointer< Block > doc );
+	void parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc );
 	void clearCache();
 
 	enum class BlockType {

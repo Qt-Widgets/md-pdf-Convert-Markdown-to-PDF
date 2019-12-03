@@ -49,7 +49,7 @@ Parser::parse( const QString & fileName, bool recursive )
 }
 
 void
-Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Block > doc )
+Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc )
 {
 	QFileInfo fi( fileName );
 
@@ -77,6 +77,14 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Blo
 				{
 					auto nextFileName = linksToParse.first();
 					linksToParse.removeFirst();
+					
+					if( nextFileName.startsWith( QLatin1Char( '#' ) ) )
+					{
+						if( doc->labeledLinks().contains( nextFileName ) )
+							nextFileName = doc->labeledLinks()[ nextFileName ]->url();
+						else
+							continue;
+					}
 
 					if( !m_parsedFiles.contains( nextFileName ) )
 					{
@@ -692,6 +700,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					{
 						url = QString::fromLatin1( "#" ) + url +
 							QDir::separator() + workingPath + fileName;
+						
+						linksToParse.append( url );
 
 						++i;
 					}
