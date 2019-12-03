@@ -2258,3 +2258,41 @@ TEST_CASE( "linked md" )
 	
 	REQUIRE( t->text() == QLatin1String( "Paragraph 1" ) );
 }
+
+TEST_CASE( "linked md (not recursive)" )
+{
+	MD::Parser parser;
+	
+	auto doc = parser.parse( QLatin1String( "./test42.md" ), false );
+	
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+	
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	
+	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	
+	REQUIRE( l->items().size() == 2 );
+	
+	const QString wd = QDir().absolutePath() + QDir::separator();
+	
+	for( int i = 0; i < 2; ++i )
+	{
+		REQUIRE( l->items().at( i )->type() == MD::ItemType::ListItem );
+		
+		auto li = static_cast< MD::ListItem* > ( l->items().at( i ).data() );
+		
+		REQUIRE( li->items().size() == 1 );
+		REQUIRE( li->items().at( 0 )->type() == MD::ItemType::Paragraph );
+		
+		auto p = static_cast< MD::Paragraph* > ( li->items().at( 0 ).data() );
+		
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+		
+		auto lnk = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+		
+		REQUIRE( lnk->text() == QLatin1String( "Chapter 1" ) );
+		REQUIRE( lnk->url() == wd + QLatin1String( "test42-1.md" ) );
+	}
+}
