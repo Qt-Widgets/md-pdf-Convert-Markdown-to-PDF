@@ -1,4 +1,4 @@
-[^footnote]: Paragraph in footnote
+ [^footnote]: Paragraph in footnote
 
     Paragraph in footnote
 
