@@ -60,43 +60,51 @@ private:
 
 	BlockType whatIsTheLine( const QString & str, bool inList = false ) const;
 	void parseFragment( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseText( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseList( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseCode( QStringList & fr, QSharedPointer< Block > parent, int indent = 0 );
 	void parseCodeIndentedBySpaces( QStringList & fr, QSharedPointer< Block > parent,
 		int indent = 4 );
 	void parseListItem( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseHeading( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseFootnote( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseTable( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block > parent,
-		QSharedPointer< Block > parentOfParent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	bool fileExists( const QString & fileName, const QString & workingPath ) const;
 
 	template< typename STREAM >
-	void parse( STREAM & stream, QSharedPointer< Block > parent, QStringList & linksToParse,
+	void parse( STREAM & stream, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc, QStringList & linksToParse,
 		const QString & workingPath, const QString & fileName,
 		bool skipSpacesAtStartOfLine = false )
 	{
@@ -110,7 +118,7 @@ private:
 		// Parse fragment and clear internal cache.
 		auto pf = [&]()
 			{
-				parseFragment( fragment, parent, linksToParse, workingPath, fileName );
+				parseFragment( fragment, parent, doc, linksToParse, workingPath, fileName );
 				fragment.clear();
 				type = BlockType::Unknown;
 			};
@@ -161,6 +169,9 @@ private:
 						break;
 					}
 				}
+
+				if( stream.atEnd() && !fragment.isEmpty() )
+					pf();
 			};
 
 		static const QRegExp footnoteRegExp( QLatin1String( "\\s*\\[\\^[^\\s]*\\]:.*" ) );
@@ -192,7 +203,11 @@ private:
 					case BlockType::Text :
 					{
 						if( footnoteRegExp.exactMatch( fragment.first() ) )
+						{
+							fragment.append( QString() );
+
 							eatFootnote();
+						}
 						else
 							pf();
 

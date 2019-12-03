@@ -65,7 +65,8 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 			QTextStream s( &f );
 			TextStream stream( s );
 
-			parse( stream, doc, linksToParse, fi.absolutePath() + QDir::separator(), fi.fileName() );
+			parse( stream, doc, doc, linksToParse,
+				fi.absolutePath() + QDir::separator(), fi.fileName() );
 
 			f.close();
 
@@ -77,7 +78,7 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 				{
 					auto nextFileName = linksToParse.first();
 					linksToParse.removeFirst();
-					
+
 					if( nextFileName.startsWith( QLatin1Char( '#' ) ) )
 					{
 						if( doc->labeledLinks().contains( nextFileName ) )
@@ -90,7 +91,7 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 					{
 						if( !doc->isEmpty() && doc->items().last()->type() != ItemType::PageBreak )
 							doc->appendItem( QSharedPointer< PageBreak > ( new PageBreak() ) );
-						
+
 						parseFile( nextFileName, recursive, doc );
 					}
 				}
@@ -167,16 +168,17 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 
 void
 Parser::parseFragment( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	switch( whatIsTheLine( fr.first() ) )
 	{
 		case BlockType::Text :
-			parseText( fr, parent, linksToParse, workingPath, fileName );
+			parseText( fr, parent, doc, linksToParse, workingPath, fileName );
 			break;
 
 		case BlockType::Blockquote :
-			parseBlockquote( fr, parent, linksToParse, workingPath, fileName );
+			parseBlockquote( fr, parent, doc, linksToParse, workingPath, fileName );
 			break;
 
 		case BlockType::Code :
@@ -195,7 +197,7 @@ Parser::parseFragment( QStringList & fr, QSharedPointer< Block > parent,
 			break;
 
 		case BlockType::List :
-			parseList( fr, parent, linksToParse, workingPath, fileName );
+			parseList( fr, parent, doc, linksToParse, workingPath, fileName );
 			break;
 
 		default :
@@ -211,7 +213,8 @@ Parser::clearCache()
 
 void
 Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	static const QRegExp hr( QLatin1String( "^\\s*#+\\s+.*" ) );
 	static const QRegExp fnr( QLatin1String( "\\s*\\[\\^[^\\s]*\\]:.*" ) );
@@ -222,12 +225,52 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 	if( hr.exactMatch( fr.first() ) )
 		parseHeading( fr, parent, linksToParse, workingPath, fileName );
 	else if( fnr.exactMatch( fr.first() ) )
-		parseFootnote( fr, parent, linksToParse, workingPath, fileName );
+		parseFootnote( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( thr.indexIn( fr.first() ) > -1 && fr.size() > 1 && tcr.exactMatch( fr.at( 1 ) ) )
 		parseTable( fr, parent, linksToParse, workingPath, fileName );
 	else
-		parseParagraph( fr, parent, linksToParse, workingPath, fileName );
+		parseParagraph( fr, parent, doc, linksToParse, workingPath, fileName );
 }
+
+namespace /* anonymous */ {
+
+// Skip spaces in line from pos \a i.
+int
+skipSpaces( int i, const QString & line )
+{
+	const int length = line.length();
+
+	while( i < length && line[ i ].isSpace() )
+		++i;
+
+	return i;
+}; // skipSpaces
+
+// Read text of the link. I.e. in [...]
+QString readLinkText( int & i, const QString & line )
+{
+	const int length = line.length();
+	QString t;
+
+	while( i < length )
+	{
+		if( line[ i ] != QLatin1Char( ']' ) && line[ i - 1 ] != QLatin1Char( '\\' ) )
+			t.append( line[ i ] );
+		else
+			break;
+
+		++i;
+	}
+
+	++i;
+
+	if( i - 1 < length && line[ i - 1 ] == QLatin1Char( ']' ) )
+		return t;
+	else
+		return QString();
+}; // readLinkText
+
+} /* namespace anonymous */
 
 void
 Parser::parseHeading( QStringList & fr, QSharedPointer< Block > parent,
@@ -237,10 +280,54 @@ Parser::parseHeading( QStringList & fr, QSharedPointer< Block > parent,
 }
 
 void
-Parser::parseFootnote( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+Parser::parseFootnote( QStringList & fr, QSharedPointer< Block >,
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
+	if( !fr.isEmpty() )
+	{
+		QSharedPointer< Footnote > f( new Footnote() );
 
+		QString line = fr.first();
+		fr.removeFirst();
+
+		int pos = skipSpaces( 0, line );
+
+		if( pos > 0 )
+			line = line.mid( pos );
+
+		if( line.startsWith( QLatin1String( "[^" ) ) )
+		{
+			pos = 2;
+
+			QString id = readLinkText( pos, line );
+
+			if( !id.isEmpty() && line[ pos ] == QLatin1Char( ':' ) )
+			{
+				++pos;
+
+				line = line.mid( pos );
+
+				for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
+				{
+					if( it->startsWith( QLatin1String( "    " ) ) )
+						*it = it->mid( 4 );
+					else if( it->startsWith( QLatin1Char( '\t' ) ) )
+						*it = it->mid( 1 );
+				}
+
+				fr.prepend( line );
+
+				StringListStream stream( fr );
+
+				parse( stream, f, doc, linksToParse, workingPath, fileName, false );
+
+				if( !f->isEmpty() )
+					doc->insertFootnote( QString::fromLatin1( "#" ) + id +
+						QDir::separator() + workingPath + fileName, f );
+			}
+		}
+	}
 }
 
 void
@@ -252,7 +339,8 @@ Parser::parseTable( QStringList & fr, QSharedPointer< Block > parent,
 
 void
 Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	static const QRegExp h1r( QLatin1String( "^\\s*===*\\s*$" ) );
 	static const QRegExp h2r( QLatin1String( "^\\s*---*\\s*$" ) );
@@ -269,7 +357,7 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 		for( int idx = 0; idx <= i; ++idx )
 			fr.removeFirst();
 
-		parseParagraph( fr, parent, linksToParse, workingPath, fileName );
+		parseParagraph( fr, parent, doc, linksToParse, workingPath, fileName );
 	};
 	\
 	// Check for alternative syntax of H1 and H2 headings.
@@ -293,7 +381,7 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 
 	QSharedPointer< Paragraph > p( new Paragraph() );
 
-	parseFormattedTextLinksImages( fr, p, parent, linksToParse, workingPath, fileName );
+	parseFormattedTextLinksImages( fr, p, doc, linksToParse, workingPath, fileName );
 
 	if( !p->isEmpty() )
 		parent->appendItem( p );
@@ -301,7 +389,7 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 
 void
 Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block > parent,
-	QSharedPointer< Block > parentOfParent, QStringList & linksToParse, const QString & workingPath,
+	QSharedPointer< Document > doc, QStringList & linksToParse, const QString & workingPath,
 	const QString & fileName )
 
 {
@@ -337,41 +425,6 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	}; // struct PreparsedData
 
 	PreparsedData data;
-
-	// Skip spaces in line from pos \a i.
-	auto skipSpaces = []( int i, const QString & line ) -> int
-	{
-		const int length = line.length();
-
-		while( i < length && line[ i ].isSpace() )
-			++i;
-
-		return i;
-	}; // skipSpaces
-
-	// Read text of the link. I.e. in [...]
-	auto readLinkText = []( int & i, const QString & line ) -> QString
-	{
-		const int length = line.length();
-		QString t;
-
-		while( i < length )
-		{
-			if( line[ i ] != QLatin1Char( ']' ) && line[ i - 1 ] != QLatin1Char( '\\' ) )
-				t.append( line[ i ] );
-			else
-				break;
-
-			++i;
-		}
-
-		++i;
-
-		if( i - 1 < length && line[ i - 1 ] == QLatin1Char( ']' ) )
-			return t;
-		else
-			return QString();
-	}; // readLinkText
 
 	// Read URL.
 	auto readLnk = [&]( int & i, const QString & line ) -> QString
@@ -627,15 +680,12 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						}
 					}
 
-					if( parentOfParent->type() == ItemType::Document )
-					{
-						QSharedPointer< Link > lnk( new Link() );
-						lnk->setUrl( url );
+					QSharedPointer< Link > lnk( new Link() );
+					lnk->setUrl( url );
 
-						static_cast< Document* > ( parentOfParent.data() )->insertLabeledLink(
-							QString::fromLatin1( "#" ) + lnkText +
-							QDir::separator() + workingPath + fileName, lnk );
-					}
+					doc->insertLabeledLink(
+						QString::fromLatin1( "#" ) + lnkText +
+						QDir::separator() + workingPath + fileName, lnk );
 
 					return length;
 				}
@@ -700,7 +750,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					{
 						url = QString::fromLatin1( "#" ) + url +
 							QDir::separator() + workingPath + fileName;
-						
+
 						linksToParse.append( url );
 
 						++i;
@@ -834,7 +884,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	auto parseUrl = [&]( int i, const QString & line, QString & text ) -> int
 	{
 		const int start = i;
-		
+
 		++i;
 
 		const int length = line.length();
@@ -1161,7 +1211,8 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 
 void
 Parser::parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	QSharedPointer< Blockquote > bq( new Blockquote() );
 
@@ -1174,7 +1225,7 @@ Parser::parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
 		for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
 			*it = it->mid( indent + 1 );
 
-		parse( stream, bq, linksToParse, workingPath, fileName );
+		parse( stream, bq, doc, linksToParse, workingPath, fileName );
 	}
 
 	if( !bq->isEmpty() )
@@ -1183,7 +1234,8 @@ Parser::parseBlockquote( QStringList & fr, QSharedPointer< Block > parent,
 
 void
 Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	for( auto it = fr.begin(), last  = fr.end(); it != last; ++it )
 		it->replace( QLatin1Char( '\t' ), QLatin1String( "    " ) );
@@ -1217,7 +1269,7 @@ Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
 
 			if( i == 0 )
 			{
-				parseListItem( listItem, list, linksToParse, workingPath, fileName );
+				parseListItem( listItem, list, doc, linksToParse, workingPath, fileName );
 				listItem.clear();
 			}
 
@@ -1225,7 +1277,7 @@ Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
 		}
 
 		if( !listItem.isEmpty() )
-			parseListItem( listItem, list, linksToParse, workingPath, fileName );
+			parseListItem( listItem, list, doc, linksToParse, workingPath, fileName );
 
 		if( !list->isEmpty() )
 			parent->appendItem( list );
@@ -1234,7 +1286,8 @@ Parser::parseList( QStringList & fr, QSharedPointer< Block > parent,
 
 void
 Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
 	static const QRegExp unorderedRegExp( QLatin1String( "^[\\*|\\-|\\+]\\s+.*" ) );
 	static const QRegExp orderedRegExp( QLatin1String( "^(\\d+)\\.\\s+.*" ) );
@@ -1276,13 +1329,13 @@ Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 		{
 			StringListStream stream( data );
 
-			parse( stream, item, linksToParse, workingPath, fileName, true );
+			parse( stream, item, doc, linksToParse, workingPath, fileName, true );
 
 			data.clear();
 
 			QStringList nestedList = fr.mid( pos );
 
-			parseList( nestedList, item, linksToParse, workingPath, fileName );
+			parseList( nestedList, item, doc, linksToParse, workingPath, fileName );
 
 			break;
 		}
@@ -1299,7 +1352,7 @@ Parser::parseListItem( QStringList & fr, QSharedPointer< Block > parent,
 	{
 		StringListStream stream( data );
 
-		parse( stream, item, linksToParse, workingPath, fileName, true );
+		parse( stream, item, doc, linksToParse, workingPath, fileName, true );
 	}
 
 	if( !item->isEmpty() )
