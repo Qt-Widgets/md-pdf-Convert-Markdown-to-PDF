@@ -1468,18 +1468,29 @@ TEST_CASE( "links" )
 
 	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
 
-	REQUIRE( p->items().size() == 4 );
-
+	REQUIRE( p->items().size() == 5 );
+	
 	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
 
-	auto l1 = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+	auto l0 = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+	
+	REQUIRE( l0->text() == QLatin1String( "link 0" ) );
+	
+	const QString wrong = QString::fromLatin1( "#wrong-label" ) + QDir::separator() +
+		wd + QLatin1String( "test31.md" );
+	
+	REQUIRE( l0->url() == wrong );
+
+	REQUIRE( p->items().at( 1 )->type() == MD::ItemType::Link );
+
+	auto l1 = static_cast< MD::Link* > ( p->items().at( 1 ).data() );
 
 	REQUIRE( l1->text() == QLatin1String( "link 1" ) );
 	REQUIRE( l1->url() == ( wd + QLatin1String( "a.md" ) ) );
 
-	REQUIRE( p->items().at( 1 )->type() == MD::ItemType::Link );
+	REQUIRE( p->items().at( 2 )->type() == MD::ItemType::Link );
 
-	auto l2 = static_cast< MD::Link* > ( p->items().at( 1 ).data() );
+	auto l2 = static_cast< MD::Link* > ( p->items().at( 2 ).data() );
 
 	REQUIRE( l2->text().isEmpty() );
 	REQUIRE( l2->url() == wd + QLatin1String( "b.md" ) );
@@ -1489,9 +1500,9 @@ TEST_CASE( "links" )
 	REQUIRE( l2->img()->text() == QLatin1String( "image 1" ) );
 	REQUIRE( l2->img()->url() == wd + QLatin1String( "a.png" ) );
 
-	REQUIRE( p->items().at( 2 )->type() == MD::ItemType::Link );
+	REQUIRE( p->items().at( 3 )->type() == MD::ItemType::Link );
 
-	auto l3 = static_cast< MD::Link* > ( p->items().at( 2 ).data() );
+	auto l3 = static_cast< MD::Link* > ( p->items().at( 3 ).data() );
 
 	REQUIRE( l3->text() == QLatin1String( "link 3" ) );
 
@@ -1500,9 +1511,9 @@ TEST_CASE( "links" )
 
 	REQUIRE( l3->url() == label );
 
-	REQUIRE( p->items().at( 3 )->type() == MD::ItemType::FootnoteRef );
+	REQUIRE( p->items().at( 4 )->type() == MD::ItemType::FootnoteRef );
 
-	auto f1 = static_cast< MD::FootnoteRef* > ( p->items().at( 3 ).data() );
+	auto f1 = static_cast< MD::FootnoteRef* > ( p->items().at( 4 ).data() );
 
 	REQUIRE( f1->id() ==
 		QString::fromLatin1( "ref" ) + QDir::separator() + wd + QLatin1String( "test31.md" ) );
