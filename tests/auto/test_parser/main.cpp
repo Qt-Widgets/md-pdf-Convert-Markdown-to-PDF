@@ -1462,7 +1462,7 @@ TEST_CASE( "links" )
 	const QString wd = QDir().absolutePath() + QDir::separator();
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 3 );
+	REQUIRE( doc->items().size() == 4 );
 
 	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
 
@@ -1550,6 +1550,8 @@ TEST_CASE( "links" )
 		REQUIRE( l->url() == QString::fromLatin1( "#label" ) +
 			QDir::separator() + wd + QLatin1String( "test31.md" ) );
 	}
+	
+	REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::PageBreak );
 }
 
 TEST_CASE( "code in blockquote" )
@@ -2217,7 +2219,7 @@ TEST_CASE( "linked md" )
 	auto doc = parser.parse( QLatin1String( "./test42.md" ) );
 	
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 	
 	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
 	
@@ -2247,9 +2249,11 @@ TEST_CASE( "linked md" )
 		REQUIRE( lnk->url() == wd + QLatin1String( "test42-1.md" ) );
 	}
 	
-	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::PageBreak );
 	
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+	REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
+	
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
 	
 	REQUIRE( p->items().size() == 1 );
 	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );

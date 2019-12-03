@@ -39,6 +39,17 @@ Item::type() const
 
 
 //
+// PageBreak
+//
+
+ItemType
+PageBreak::type() const
+{
+	return ItemType::PageBreak;
+}
+
+
+//
 // Heading
 //
 

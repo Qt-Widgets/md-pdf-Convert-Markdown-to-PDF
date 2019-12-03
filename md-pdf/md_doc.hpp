@@ -75,7 +75,9 @@ enum class ItemType {
 	//! Footnote.
 	Footnote,
 	//! Document.
-	Document
+	Document,
+	//! Page break.
+	PageBreak
 }; // enum class ItemType
 
 
@@ -96,6 +98,25 @@ public:
 private:
 	Q_DISABLE_COPY( Item )
 }; // class Item
+
+
+//
+// PageBreak
+//
+
+//! Page break.
+class PageBreak final
+	:	public Item
+{
+public:
+	PageBreak() = default;
+	~PageBreak() override = default;
+	
+	ItemType type() const override;
+	
+private:
+	Q_DISABLE_COPY( PageBreak )
+}; // class PageBreak
 
 
 //
