@@ -2209,3 +2209,52 @@ TEST_CASE( "unordered list with paragraph with tabs" )
 		}
 	}
 }
+
+TEST_CASE( "linked md" )
+{
+	MD::Parser parser;
+	
+	auto doc = parser.parse( QLatin1String( "./test42.md" ) );
+	
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 2 );
+	
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	
+	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	
+	REQUIRE( l->items().size() == 2 );
+	
+	const QString wd = QDir().absolutePath() + QDir::separator();
+	
+	for( int i = 0; i < 2; ++i )
+	{
+		REQUIRE( l->items().at( i )->type() == MD::ItemType::ListItem );
+		
+		auto li = static_cast< MD::ListItem* > ( l->items().at( i ).data() );
+		
+		REQUIRE( li->items().size() == 1 );
+		REQUIRE( li->items().at( 0 )->type() == MD::ItemType::Paragraph );
+		
+		auto p = static_cast< MD::Paragraph* > ( li->items().at( 0 ).data() );
+		
+		REQUIRE( p->items().size() == 1 );
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Link );
+		
+		auto lnk = static_cast< MD::Link* > ( p->items().at( 0 ).data() );
+		
+		REQUIRE( lnk->text() == QLatin1String( "Chapter 1" ) );
+		REQUIRE( lnk->url() == wd + QLatin1String( "test42-1.md" ) );
+	}
+	
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+	
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+	
+	REQUIRE( p->items().size() == 1 );
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+	
+	auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+	
+	REQUIRE( t->text() == QLatin1String( "Paragraph 1" ) );
+}
