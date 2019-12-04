@@ -396,27 +396,10 @@ Code::setInlined( bool on )
 // TableCell
 //
 
-TableCell::TableCell( const QString & t )
-	:	m_text( t )
-{
-}
-
 ItemType
 TableCell::type() const
 {
 	return ItemType::TableCell;
-}
-
-const QString &
-TableCell::text() const
-{
-	return m_text;
-}
-
-void
-TableCell::setText( const QString & t )
-{
-	m_text = t;
 }
 
 
@@ -448,6 +431,12 @@ TableRow::appendCell( QSharedPointer< TableCell > c )
 	m_cells.append( c );
 }
 
+bool
+TableRow::isEmpty() const
+{
+	return m_cells.isEmpty();
+}
+
 
 //
 // Table
@@ -475,6 +464,33 @@ void
 Table::appendRow( QSharedPointer< TableRow > r )
 {
 	m_rows.append( r );
+}
+
+Table::Alignment
+Table::columnAlignment( int idx ) const
+{
+	return m_aligns.at( idx );
+}
+
+void
+Table::setColumnAlignment( int idx, Alignment a )
+{
+	if( idx + 1 > columnsCount() )
+		m_aligns.append( a );
+	else
+		m_aligns[ idx ] = a;
+}
+
+int
+Table::columnsCount() const
+{
+	return m_aligns.size();
+}
+
+bool
+Table::isEmpty() const
+{
+	return ( m_aligns.isEmpty() || m_rows.isEmpty() );
 }
 
 

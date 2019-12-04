@@ -2454,3 +2454,85 @@ TEST_CASE( "headings" )
 	REQUIRE( doc->labeledHeadings().contains( label ) );
 	REQUIRE( doc->labeledHeadings()[ label ].data() == h );
 }
+
+TEST_CASE( "tables" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test47.md" ) );
+
+	REQUIRE( !doc->isEmpty() );
+	REQUIRE( doc->items().size() == 2 );
+
+	for( int i = 0; i < 2; ++i )
+	{
+		REQUIRE( doc->items().at( i )->type() == MD::ItemType::Table );
+
+		auto t = static_cast< MD::Table* > ( doc->items().at( i ).data() );
+
+		REQUIRE( t->columnsCount() == 2 );
+		REQUIRE( t->rows().size() == 2 );
+
+		auto r0 = t->rows().at( 0 );
+
+		REQUIRE( r0->cells().size() == 2 );
+
+		{
+			auto c0 = static_cast< MD::TableCell* > ( r0->cells().at( 0 ).data() );
+
+			REQUIRE( c0->items().size() == 1 );
+			REQUIRE( c0->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t0 = static_cast< MD::Text* > ( c0->items().at( 0 ).data() );
+
+			REQUIRE( t0->text() == QLatin1String( "Column 1" ) );
+		}
+
+		{
+			auto c1 = static_cast< MD::TableCell* > ( r0->cells().at( 1 ).data() );
+
+			REQUIRE( c1->items().size() == 1 );
+			REQUIRE( c1->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t1 = static_cast< MD::Text* > ( c1->items().at( 0 ).data() );
+
+			REQUIRE( t1->text() == QLatin1String( "Column 2" ) );
+		}
+
+		auto r1 = t->rows().at( 1 );
+
+		REQUIRE( r1->cells().size() == 2 );
+
+		{
+			auto c0 = static_cast< MD::TableCell* > ( r1->cells().at( 0 ).data() );
+
+			REQUIRE( c0->items().size() == 1 );
+			REQUIRE( c0->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t0 = static_cast< MD::Text* > ( c0->items().at( 0 ).data() );
+
+			REQUIRE( t0->text() == QLatin1String( "Cell 1" ) );
+		}
+
+		{
+			auto c1 = static_cast< MD::TableCell* > ( r1->cells().at( 1 ).data() );
+
+			REQUIRE( c1->items().size() == 1 );
+			REQUIRE( c1->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t1 = static_cast< MD::Text* > ( c1->items().at( 0 ).data() );
+
+			REQUIRE( t1->text() == QLatin1String( "Cell 2" ) );
+		}
+	}
+
+	auto table = static_cast< MD::Table* > ( doc->items().at( 0 ).data() );
+
+	REQUIRE( table->columnAlignment( 0 ) == MD::Table::AlignLeft );
+	REQUIRE( table->columnAlignment( 1 ) == MD::Table::AlignLeft );
+
+	table = static_cast< MD::Table* > ( doc->items().at( 1 ).data() );
+
+	REQUIRE( table->columnAlignment( 0 ) == MD::Table::AlignCenter );
+	REQUIRE( table->columnAlignment( 1 ) == MD::Table::AlignRight );
+}

@@ -440,20 +440,15 @@ private:
 
 //! Table cell.
 class TableCell final
-	:	public Item
+	:	public Block
 {
 public:
-	explicit TableCell( const QString & t );
+	TableCell() = default;
 	~TableCell() override = default;
 
 	ItemType type() const override;
 
-	const QString & text() const;
-	void setText( const QString & t );
-
 private:
-	QString m_text;
-
 	Q_DISABLE_COPY( TableCell )
 }; // class TableCell
 
@@ -477,6 +472,8 @@ public:
 	const Cells & cells() const;
 	void setCells( const Cells & c );
 	void appendCell( QSharedPointer< TableCell > c );
+
+	bool isEmpty() const;
 
 private:
 	Cells m_cells;
@@ -505,8 +502,25 @@ public:
 	void setRows( const Rows & r );
 	void appendRow( QSharedPointer< TableRow > r );
 
+	//! Alignment.
+	enum Alignment {
+		AlignLeft,
+		AlignRight,
+		AlignCenter
+	}; // enum Alignmnet.
+
+	typedef QVector< Alignment > ColumnsAlignments;
+
+	Alignment columnAlignment( int idx ) const;
+	void setColumnAlignment( int idx, Alignment a );
+
+	int columnsCount() const;
+
+	bool isEmpty() const;
+
 private:
 	Rows m_rows;
+	ColumnsAlignments m_aligns;
 
 	Q_DISABLE_COPY( Table )
 }; // class Table

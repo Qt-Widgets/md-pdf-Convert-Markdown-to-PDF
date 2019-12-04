@@ -218,7 +218,7 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 {
 	static const QRegExp hr( QLatin1String( "^\\s*#+\\s+.*" ) );
 	static const QRegExp fnr( QLatin1String( "\\s*\\[\\^[^\\s]*\\]:.*" ) );
-	static const QRegExp thr( QLatin1String( "\\s\\|\\s" ) );
+	static const QRegExp thr( QLatin1String( "\\s*\\|\\s*" ) );
 	static const QRegExp tcr( QLatin1String(
 		"^\\s*\\|?(\\s*:?-{3,}:?\\s*\\|)*\\s*:?-{3,}:?\\s*\\|?\\s*$" ) );
 
@@ -227,7 +227,7 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 	else if( fnr.exactMatch( fr.first() ) )
 		parseFootnote( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( thr.indexIn( fr.first() ) > -1 && fr.size() > 1 && tcr.exactMatch( fr.at( 1 ) ) )
-		parseTable( fr, parent, linksToParse, workingPath, fileName );
+		parseTable( fr, parent, doc, linksToParse, workingPath, fileName );
 	else
 		parseParagraph( fr, parent, doc, linksToParse, workingPath, fileName );
 }
@@ -410,9 +410,79 @@ Parser::parseFootnote( QStringList & fr, QSharedPointer< Block >,
 
 void
 Parser::parseTable( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
+	static const QChar sep( '|' );
 
+	if( fr.size() >= 2 )
+	{
+		QSharedPointer< Table > table( new Table() );
+
+		auto parseTableRow = [&] ( const QString & row )
+		{
+			auto line = row.simplified();
+
+			if( line.startsWith( sep ) )
+				line.remove( 0, 1 );
+
+			if( line.endsWith( sep ) )
+				line.remove( line.length() - 1, 1 );
+
+			auto columns = line.split( sep );
+
+			QSharedPointer< TableRow > tr( new TableRow() );
+
+			for( auto it = columns.begin(), last = columns.end(); it != last; ++it )
+			{
+				QSharedPointer< TableCell > c( new TableCell() );
+
+				if( !it->isEmpty() )
+				{
+					it->replace( QLatin1String( "&#124;" ), sep );
+
+					QStringList fragment;
+					fragment.append( *it );
+
+					parseFormattedTextLinksImages( fragment, c, doc,
+						linksToParse, workingPath, fileName );
+				}
+
+				tr->appendCell( c );
+			}
+
+			if( !tr->isEmpty() )
+				table->appendRow( tr );
+		};
+
+		{
+			auto fmt = fr.at( 1 );
+
+			auto columns = fmt.split( sep, QString::SkipEmptyParts );
+
+			for( auto it = columns.begin(), last = columns.end(); it != last; ++it )
+			{
+				*it = it->simplified();
+
+				Table::Alignment a = Table::AlignLeft;
+
+				if( it->endsWith( QLatin1Char( ':' ) ) && it->startsWith( QLatin1Char( ':' ) ) )
+					a = Table::AlignCenter;
+				else if( it->endsWith( QLatin1Char( ':' ) ) )
+					a = Table::AlignRight;
+
+				table->setColumnAlignment( table->columnsCount(), a );
+			}
+		}
+
+		fr.removeAt( 1 );
+
+		for( const auto & line : qAsConst( fr ) )
+			parseTableRow( line );
+
+		if( !table->isEmpty() )
+			parent->appendItem( table );
+	}
 }
 
 void
