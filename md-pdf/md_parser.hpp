@@ -83,6 +83,7 @@ private:
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseHeading( QStringList & fr, QSharedPointer< Block > parent,
+		QSharedPointer< Document > doc,
 		QStringList & linksToParse, const QString & workingPath,
 		const QString & fileName );
 	void parseFootnote( QStringList & fr, QSharedPointer< Block > parent,

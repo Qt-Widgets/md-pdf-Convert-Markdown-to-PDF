@@ -53,12 +53,6 @@ PageBreak::type() const
 // Heading
 //
 
-Heading::Heading( const QString & text, int l )
-	:	m_text( text )
-	,	m_level( l )
-{
-}
-
 ItemType
 Heading::type() const
 {
@@ -87,6 +81,24 @@ void
 Heading::setLevel( int l )
 {
 	m_level = l;
+}
+
+bool
+Heading::isLabeled() const
+{
+	return !m_label.isEmpty();
+}
+
+const QString &
+Heading::label() const
+{
+	return m_label;
+}
+
+void
+Heading::setLabel( const QString & l )
+{
+	m_label = l;
 }
 
 
@@ -537,6 +549,18 @@ void
 Document::insertLabeledLink( const QString & label, QSharedPointer< Link > lnk )
 {
 	m_labeledLinks.insert( label, lnk );
+}
+
+const Document::LabeledHeadings &
+Document::labeledHeadings() const
+{
+	return m_labeledHeadings;
+}
+
+void
+Document::insertLabeledHeading( const QString & label, QSharedPointer< Heading > h )
+{
+	m_labeledHeadings.insert( label, h );
 }
 
 } /* namespace MD */

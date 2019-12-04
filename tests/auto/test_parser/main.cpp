@@ -2397,3 +2397,60 @@ TEST_CASE( "footnote" )
 		REQUIRE( t->text() == QLatin1String( "Paragraph in footnote" ) );
 	}
 }
+
+TEST_CASE( "headings" )
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( QLatin1String( "./test46.md" ) );
+
+	REQUIRE( !doc->isEmpty() );
+	REQUIRE( doc->items().size() == 9 );
+
+	int idx = 0;
+
+	for( int i = 1; i < 3; ++i )
+	{
+		for( int j = 1; j < 3; ++j )
+		{
+			REQUIRE( doc->items().at( idx )->type() == MD::ItemType::Heading );
+
+			auto h = static_cast< MD::Heading* > ( doc->items().at( idx ).data() );
+
+			REQUIRE( h->level() == j );
+			REQUIRE( h->text() == QString::fromLatin1( "Heading " ) + QString::number( j ) );
+			REQUIRE( !h->isLabeled() );
+
+			++idx;
+
+			REQUIRE( doc->items().at( idx )->type() == MD::ItemType::Paragraph );
+
+			auto p = static_cast< MD::Paragraph* > ( doc->items().at( idx ).data() );
+
+			REQUIRE( p->items().size() == 1 );
+			REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+			REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() ==
+				QString::fromLatin1( "Paragraph " ) + QString::number( j ) );
+
+			++idx;
+		}
+	}
+
+	REQUIRE( doc->items().at( idx )->type() == MD::ItemType::Heading );
+
+	auto h = static_cast< MD::Heading* > ( doc->items().at( idx ).data() );
+
+	REQUIRE( h->level() == 3 );
+	REQUIRE( h->text() == QLatin1String( "Heading 3" ) );
+	REQUIRE( h->isLabeled() );
+
+	const QString wd = QDir().absolutePath() + QDir::separator();
+	const QString label = QString::fromLatin1( "#heading-3" ) + QDir::separator() +
+		wd + QLatin1String( "test46.md" );
+
+	REQUIRE( h->label() == label );
+
+	REQUIRE( doc->labeledHeadings().size() == 1 );
+	REQUIRE( doc->labeledHeadings().contains( label ) );
+	REQUIRE( doc->labeledHeadings()[ label ].data() == h );
+}

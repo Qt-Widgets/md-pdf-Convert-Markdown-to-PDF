@@ -111,9 +111,9 @@ class PageBreak final
 public:
 	PageBreak() = default;
 	~PageBreak() override = default;
-	
+
 	ItemType type() const override;
-	
+
 private:
 	Q_DISABLE_COPY( PageBreak )
 }; // class PageBreak
@@ -128,7 +128,7 @@ class Heading final
 	:	public Item
 {
 public:
-	Heading( const QString & text, int level );
+	Heading() = default;
 	~Heading() override = default;
 
 	ItemType type() const override;
@@ -139,9 +139,14 @@ public:
 	int level() const;
 	void setLevel( int l );
 
+	bool isLabeled() const;
+	const QString & label() const;
+	void setLabel( const QString & l );
+
 private:
 	QString m_text;
 	int m_level;
+	QString m_label;
 
 	Q_DISABLE_COPY( Heading )
 }; // class Heading
@@ -574,9 +579,15 @@ public:
 	const LabeledLinks & labeledLinks() const;
 	void insertLabeledLink( const QString & label, QSharedPointer< Link > lnk );
 
+	typedef QMap< QString, QSharedPointer< Heading > > LabeledHeadings;
+
+	const LabeledHeadings & labeledHeadings() const;
+	void insertLabeledHeading( const QString & label, QSharedPointer< Heading > h );
+
 private:
 	Footnotes m_footnotes;
 	LabeledLinks m_labeledLinks;
+	LabeledHeadings m_labeledHeadings;
 
 	Q_DISABLE_COPY( Document )
 }; // class Document;

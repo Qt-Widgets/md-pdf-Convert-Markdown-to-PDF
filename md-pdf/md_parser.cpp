@@ -223,7 +223,7 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 		"^\\s*\\|?(\\s*:?-{3,}:?\\s*\\|)*\\s*:?-{3,}:?\\s*\\|?\\s*$" ) );
 
 	if( hr.exactMatch( fr.first() ) )
-		parseHeading( fr, parent, linksToParse, workingPath, fileName );
+		parseHeading( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( fnr.exactMatch( fr.first() ) )
 		parseFootnote( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( thr.indexIn( fr.first() ) > -1 && fr.size() > 1 && tcr.exactMatch( fr.at( 1 ) ) )
@@ -274,9 +274,87 @@ QString readLinkText( int & i, const QString & line )
 
 void
 Parser::parseHeading( QStringList & fr, QSharedPointer< Block > parent,
-	QStringList & linksToParse, const QString & workingPath, const QString & fileName )
+	QSharedPointer< Document > doc, QStringList & linksToParse,
+	const QString & workingPath, const QString & fileName )
 {
+	if( !fr.isEmpty() )
+	{
+		auto line = fr.first();
+		int pos = 0;
+		pos = skipSpaces( pos, line );
 
+		if( pos > 0 )
+			line = line.mid( pos );
+
+		pos = 0;
+		int lvl = 0;
+
+		while( pos < line.length() && line[ pos ] == QLatin1Char( '#' ) )
+		{
+			++lvl;
+			++pos;
+		}
+
+		pos = skipSpaces( pos, line );
+
+		fr.first() = line.mid( pos );
+
+		static const QRegExp labelRegExp( QLatin1String( "(\\{#.*\\})" ) );
+
+		QString label;
+
+		for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
+		{
+			pos = labelRegExp.indexIn( *it );
+
+			if( pos > -1 )
+			{
+				label = it->mid( pos, labelRegExp.matchedLength() );
+
+				it->remove( pos, labelRegExp.matchedLength() );
+
+				break;
+			}
+		}
+
+		QSharedPointer< Heading > h( new Heading() );
+		h->setLevel( lvl );
+
+		if( !label.isEmpty() )
+			h->setLabel( label.mid( 1, label.length() - 2) + QDir::separator() +
+				workingPath + fileName );
+
+		QSharedPointer< Paragraph > p( new Paragraph() );
+
+		parseFormattedTextLinksImages( fr, p, doc, linksToParse, workingPath, fileName );
+
+		if( !p->isEmpty() )
+		{
+			QString text;
+
+			for( auto it = p->items().cbegin(), last = p->items().cend(); it != last; ++it )
+			{
+				if( (*it)->type() == ItemType::Text )
+				{
+					auto t = static_cast< Text* > ( it->data() );
+
+					text.append( t->text() + QLatin1Char( ' ' ) );
+				}
+			}
+
+			text = text.simplified();
+
+			if( !text.isEmpty() )
+			{
+				h->setText( text );
+
+				if( h->isLabeled() )
+					doc->insertLabeledHeading( h->label(), h );
+
+				parent->appendItem( h );
+			}
+		}
+	}
 }
 
 void
@@ -352,7 +430,7 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 		QStringList tmp = fr.mid( 0, i );
 		tmp.first().prepend( label );
 
-		parseHeading( tmp, parent, linksToParse, workingPath, fileName );
+		parseHeading( tmp, parent, doc, linksToParse, workingPath, fileName );
 
 		for( int idx = 0; idx <= i; ++idx )
 			fr.removeFirst();
