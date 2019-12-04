@@ -2405,11 +2405,11 @@ TEST_CASE( "headings" )
 	auto doc = parser.parse( QLatin1String( "./test46.md" ) );
 
 	REQUIRE( !doc->isEmpty() );
-	REQUIRE( doc->items().size() == 9 );
+	REQUIRE( doc->items().size() == 13 );
 
 	int idx = 0;
 
-	for( int i = 1; i < 3; ++i )
+	for( int i = 1; i < 4; ++i )
 	{
 		for( int j = 1; j < 3; ++j )
 		{
