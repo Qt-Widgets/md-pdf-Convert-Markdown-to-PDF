@@ -22,17 +22,15 @@
 
 // md-pdf include.
 #include "main_window.hpp"
+#include "md_parser.hpp"
 
-// Qt include.
-#include <QString>
-#include <QApplication>
 
-int main( int argc, char ** argv )
+//
+// MainWindow
+//
+
+MainWindow::MainWindow()
+	:	m_ui( new Ui::MainWindow() )
 {
-	QApplication app( argc, argv );
-
-	MainWindow w;
-	w.show();
-
-	return app.exec();
+	m_ui->setupUi( this );
 }

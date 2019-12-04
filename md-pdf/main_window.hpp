@@ -21,18 +21,29 @@
 */
 
 // md-pdf include.
-#include "main_window.hpp"
+#include "ui_main_window.h"
 
 // Qt include.
-#include <QString>
-#include <QApplication>
+#include <QWidget>
+#include <QScopedPointer>
 
-int main( int argc, char ** argv )
+
+//
+// MainWindow
+//
+
+//! Main window.
+class MainWindow final
+	:	public QWidget
 {
-	QApplication app( argc, argv );
+	Q_OBJECT
 
-	MainWindow w;
-	w.show();
+public:
+	MainWindow();
+	~MainWindow() override = default;
 
-	return app.exec();
-}
+private:
+	QScopedPointer< Ui::MainWindow > m_ui;
+
+	Q_DISABLE_COPY( MainWindow )
+}; // class MainWindow

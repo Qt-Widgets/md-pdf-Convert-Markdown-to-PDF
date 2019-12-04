@@ -24,8 +24,11 @@ set( LIB_SRC md_doc.hpp
     md_parser.hpp
     md_parser.cpp )
 
-set( GUI_SRC main.cpp )
-    
+set( GUI_SRC main.cpp
+	main_window.cpp
+	main_window.hpp
+	main_window.ui )
+
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib )
