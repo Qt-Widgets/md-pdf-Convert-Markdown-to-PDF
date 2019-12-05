@@ -87,12 +87,14 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 							continue;
 					}
 
-					if( !m_parsedFiles.contains( nextFileName ) )
+					QFileInfo nextFile( nextFileName );
+
+					if( !m_parsedFiles.contains( nextFile.absoluteFilePath() ) )
 					{
 						if( !doc->isEmpty() && doc->items().last()->type() != ItemType::PageBreak )
 							doc->appendItem( QSharedPointer< PageBreak > ( new PageBreak() ) );
 
-						parseFile( nextFileName, recursive, doc );
+						parseFile( nextFile.absoluteFilePath(), recursive, doc );
 					}
 				}
 			}

@@ -51,6 +51,7 @@ private slots:
 	void changeBorderColor();
 	void changeCodeBackground();
 	void selectMarkdown();
+	void process();
 
 private:
 	QScopedPointer< Ui::MainWindow > m_ui;

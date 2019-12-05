@@ -29,6 +29,8 @@
 #include <QToolButton>
 #include <QColorDialog>
 #include <QFileDialog>
+#include <QPushButton>
+#include <QMessageBox>
 
 
 //
@@ -60,6 +62,8 @@ MainWindow::MainWindow()
 		this, &MainWindow::changeCodeBackground );
 	connect( m_ui->m_fileNameBtn, &QToolButton::clicked,
 		this, &MainWindow::selectMarkdown );
+	connect( m_ui->m_startBtn, &QPushButton::clicked,
+		this, &MainWindow::process );
 }
 
 void
@@ -101,4 +105,15 @@ MainWindow::selectMarkdown()
 		m_ui->m_fileName->setText( fileName );
 		m_ui->m_startBtn->setEnabled( true );
 	}
+}
+
+void
+MainWindow::process()
+{
+	MD::Parser parser;
+
+	auto doc = parser.parse( m_ui->m_fileName->text(), m_ui->m_recursive->isChecked() );
+
+	QMessageBox::information( this, tr( "Markdown processed" ),
+		tr( "Document contains %1 items." ).arg( QString::number( doc->items().size() ) ) );
 }
