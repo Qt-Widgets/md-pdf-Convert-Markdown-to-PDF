@@ -150,7 +150,8 @@ MainWindow::process()
 			catch( const PoDoFo::PdfError & e )
 			{
 				QMessageBox::critical( this, tr( "Error during rendering PDF..." ),
-					tr( "%1\n\nNothing saved. Sorry." ).arg( QString::fromLatin1( e.what() ) ) );
+					tr( "%1\n\nOutput PDF is broken. Sorry." )
+						.arg( QString::fromLatin1( e.what() ) ) );
 			}
 		}
 		else

@@ -47,11 +47,34 @@ void
 PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > doc,
 	const RenderOpts & opts )
 {
-	try {
+	PdfStreamedDocument document( fileName.toLocal8Bit().data() );
 
+	PdfPainter painter;
+
+	PdfPage * page = nullptr;
+
+	try {
+		page = document.CreatePage( PdfPage::CreateStandardPageSize( ePdfPageSize_A4 ) );
+
+		if( !page )
+			PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
+
+		painter.SetPage( page );
+
+		painter.FinishPage();
+
+		document.Close();
 	}
 	catch( const PdfError & e )
 	{
+		try {
+			painter.FinishPage();
+			document.Close();
+		}
+		catch( ... )
+		{
+		}
+
 		cleanPodofo();
 
 		throw e;
