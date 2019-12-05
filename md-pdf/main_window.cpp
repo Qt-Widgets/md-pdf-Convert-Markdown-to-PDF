@@ -68,6 +68,8 @@ MainWindow::MainWindow()
 		this, &MainWindow::selectMarkdown );
 	connect( m_ui->m_startBtn, &QPushButton::clicked,
 		this, &MainWindow::process );
+
+   adjustSize();
 }
 
 void

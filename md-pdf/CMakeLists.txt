@@ -51,7 +51,7 @@ add_dependencies( md-pdf-gui podofo-lib )
 
 if( WIN32 )
 	target_link_libraries( md-pdf-gui md-parser podofo freetype
-      jpeg zlibwapi Qt5::Widgets )
+      jpeg zlib Qt5::Widgets )
 else()
 	target_link_libraries( md-pdf-gui md-parser podofo freetype
 		fontconfig jpeg z crypto Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT} )
