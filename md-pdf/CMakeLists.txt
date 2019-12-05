@@ -27,7 +27,9 @@ set( LIB_SRC md_doc.hpp
 set( GUI_SRC main.cpp
 	main_window.cpp
 	main_window.hpp
-	main_window.ui )
+	main_window.ui
+	color_widget.hpp
+	color_widget.cpp )
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 

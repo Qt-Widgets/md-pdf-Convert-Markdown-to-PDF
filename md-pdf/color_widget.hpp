@@ -20,42 +20,37 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MD_PDF_MAIN_WINDOW_HPP_INCLUDED
-#define MD_PDF_MAIN_WINDOW_HPP_INCLUDED
-
-
-// md-pdf include.
-#include "ui_main_window.h"
+#ifndef MD_PDF_COLOR_WIDGET_HPP_INCLUDED
+#define MD_PDF_COLOR_WIDGET_HPP_INCLUDED
 
 // Qt include.
-#include <QWidget>
-#include <QScopedPointer>
+#include <QFrame>
 
 
 //
-// MainWindow
+// ColorWidget
 //
 
-//! Main window.
-class MainWindow final
-	:	public QWidget
+//! Color widget.
+class ColorWidget final
+	:	public QFrame
 {
 	Q_OBJECT
 
 public:
-	MainWindow();
-	~MainWindow() override = default;
+	ColorWidget( QWidget * parent );
+	~ColorWidget() override = default;
 
-private slots:
-	void changeLinkColor();
-	void changeBorderColor();
-	void changeCodeBackground();
-	void selectMarkdown();
+	const QColor & color() const;
+	void setColor( const QColor & c );
+
+protected:
+	void paintEvent( QPaintEvent * ) override;
 
 private:
-	QScopedPointer< Ui::MainWindow > m_ui;
+	QColor m_color;
 
-	Q_DISABLE_COPY( MainWindow )
-}; // class MainWindow
+	Q_DISABLE_COPY( ColorWidget )
+}; // class ColorWidget
 
-#endif // MD_PDF_MAIN_WINDOW_HPP_INCLUDED
+#endif // MD_PDF_COLOR_WIDGET_HPP_INCLUDED

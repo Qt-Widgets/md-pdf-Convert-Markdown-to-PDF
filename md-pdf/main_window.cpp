@@ -24,6 +24,12 @@
 #include "main_window.hpp"
 #include "md_parser.hpp"
 
+// Qt include.
+#include <QFontDatabase>
+#include <QToolButton>
+#include <QColorDialog>
+#include <QFileDialog>
+
 
 //
 // MainWindow
@@ -33,4 +39,66 @@ MainWindow::MainWindow()
 	:	m_ui( new Ui::MainWindow() )
 {
 	m_ui->setupUi( this );
+
+	m_ui->m_linkColor->setColor( Qt::blue );
+	m_ui->m_borderColor->setColor( Qt::black );
+	m_ui->m_codeBackground->setColor( Qt::lightGray );
+
+	QFontDatabase fd;
+	const auto fonts = fd.families();
+
+	m_ui->m_textFont->addItems( fonts );
+	m_ui->m_textFont->setCurrentText( QApplication::font().family() );
+
+	m_ui->m_codeFont->addItems( fonts );
+	m_ui->m_codeFont->setCurrentText(
+		QFontDatabase::systemFont( QFontDatabase::FixedFont ).family() );
+
+	connect( m_ui->m_linkColorBtn, &QToolButton::clicked, this, &MainWindow::changeLinkColor );
+	connect( m_ui->m_borderColorBtn, &QToolButton::clicked, this, &MainWindow::changeBorderColor );
+	connect( m_ui->m_codeBackgroundBtn, &QToolButton::clicked,
+		this, &MainWindow::changeCodeBackground );
+	connect( m_ui->m_fileNameBtn, &QToolButton::clicked,
+		this, &MainWindow::selectMarkdown );
+}
+
+void
+MainWindow::changeLinkColor()
+{
+	QColorDialog dlg( m_ui->m_linkColor->color(), this );
+
+	if( QDialog::Accepted == dlg.exec() )
+		m_ui->m_linkColor->setColor( dlg.currentColor() );
+}
+
+void
+MainWindow::changeBorderColor()
+{
+	QColorDialog dlg( m_ui->m_borderColor->color(), this );
+
+	if( QDialog::Accepted == dlg.exec() )
+		m_ui->m_borderColor->setColor( dlg.currentColor() );
+}
+
+void
+MainWindow::changeCodeBackground()
+{
+	QColorDialog dlg( m_ui->m_codeBackground->color(), this );
+
+	if( QDialog::Accepted == dlg.exec() )
+		m_ui->m_codeBackground->setColor( dlg.currentColor() );
+}
+
+void
+MainWindow::selectMarkdown()
+{
+	const auto fileName = QFileDialog::getOpenFileName( this, tr( "Select Markdown" ),
+		QDir::homePath(),
+		tr( "Markdown (*.md *.markdown)" ) );
+
+	if( !fileName.isEmpty() )
+	{
+		m_ui->m_fileName->setText( fileName );
+		m_ui->m_startBtn->setEnabled( true );
+	}
 }
