@@ -54,5 +54,5 @@ if( WIN32 )
       jpeg zlibwapi Qt5::Widgets )
 else()
 	target_link_libraries( md-pdf-gui md-parser podofo freetype
-		fontconfig jpeg z Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT} )
+		fontconfig jpeg z crypto Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT} )
 endif()
