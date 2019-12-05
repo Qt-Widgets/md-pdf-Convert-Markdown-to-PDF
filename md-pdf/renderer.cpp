@@ -23,14 +23,39 @@
 // md-pdf include.
 #include "renderer.hpp"
 
+// podofo include.
+#include <podofo/podofo.h>
+
 
 //
 // PdfRenderer
 //
 
+using namespace PoDoFo;
+
+
+namespace /* anonymous */ {
+
+	void cleanPodofo()
+	{
+		PdfEncodingFactory::FreeGlobalEncodingInstances();
+	}
+
+} /* namespace anonymous */
+
 void
 PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > doc,
 	const RenderOpts & opts )
 {
+	try {
 
+	}
+	catch( const PdfError & e )
+	{
+		cleanPodofo();
+
+		throw e;
+	}
+
+	cleanPodofo();
 }

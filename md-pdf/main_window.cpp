@@ -33,6 +33,9 @@
 #include <QPushButton>
 #include <QMessageBox>
 
+// podofo include.
+#include <podofo/podofo.h>
+
 
 //
 // MainWindow
@@ -138,13 +141,20 @@ MainWindow::process()
 			opts.m_borderColor = m_ui->m_borderColor->color();
 			opts.m_codeBackground = m_ui->m_codeBackground->color();
 
-			pdf.render( fileName, doc, opts );
+			try {
+				pdf.render( fileName, doc, opts );
 
-			QMessageBox::information( this, tr( "Markdown processed" ),
-				tr( "PDF generated. Have a look at the result. Thank you." ) );
+				QMessageBox::information( this, tr( "Markdown processed..." ),
+					tr( "PDF generated. Have a look at the result. Thank you." ) );
+			}
+			catch( const PoDoFo::PdfError & e )
+			{
+				QMessageBox::critical( this, tr( "Error during rendering PDF..." ),
+					tr( "%1\n\nNothing saved. Sorry." ).arg( QString::fromLatin1( e.what() ) ) );
+			}
 		}
 		else
-			QMessageBox::warning( this, tr( "Markdown is empty" ),
+			QMessageBox::warning( this, tr( "Markdown is empty..." ),
 				tr( "Input Markdown file is empty. Nothing saved." ) );
 	}
 }
