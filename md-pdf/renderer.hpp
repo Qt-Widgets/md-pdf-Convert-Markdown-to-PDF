@@ -26,6 +26,26 @@
 // md-pdf include.
 #include "md_doc.hpp"
 
+// Qt include.
+#include <QColor>
+
+
+//
+// RenderOpts
+//
+
+//! Options for rendering.
+struct RenderOpts
+{
+	QString m_textFont;
+	int m_textFontSize;
+	QString m_codeFont;
+	int m_codeFontSize;
+	QColor m_linkColor;
+	QColor m_borderColor;
+	QColor m_codeBackground;
+}; // struct RenderOpts
+
 
 //
 // Renderer
@@ -38,7 +58,8 @@ public:
 	Renderer() = default;
 	virtual ~Renderer() = default;
 
-	virtual void render( const QString & fileName, QSharedPointer< MD::Document > doc ) = 0;
+	virtual void render( const QString & fileName, QSharedPointer< MD::Document > doc,
+		const RenderOpts & opts ) = 0;
 }; // class Renderer
 
 
@@ -54,7 +75,8 @@ public:
 	PdfRenderer() = default;
 	~PdfRenderer() override = default;
 
-	void render( const QString & fileName, QSharedPointer< MD::Document > doc ) override;
+	void render( const QString & fileName, QSharedPointer< MD::Document > doc,
+		const RenderOpts & opts ) override;
 }; // class Renderer
 
 #endif // MD_PDF_RENDERER_HPP_INCLUDED

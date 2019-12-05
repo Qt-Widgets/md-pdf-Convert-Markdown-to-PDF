@@ -29,7 +29,8 @@
 //
 
 void
-PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > doc )
+PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > doc,
+	const RenderOpts & opts )
 {
 
 }

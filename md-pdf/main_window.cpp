@@ -128,7 +128,17 @@ MainWindow::process()
 		{
 			PdfRenderer pdf;
 
-			pdf.render( fileName, doc );
+			RenderOpts opts;
+
+			opts.m_textFont = m_ui->m_textFont->currentText();
+			opts.m_textFontSize = m_ui->m_textFontSize->value();
+			opts.m_codeFont = m_ui->m_codeFont->currentText();
+			opts.m_codeFontSize = m_ui->m_codeFontSize->value();
+			opts.m_linkColor = m_ui->m_linkColor->color();
+			opts.m_borderColor = m_ui->m_borderColor->color();
+			opts.m_codeBackground = m_ui->m_codeBackground->color();
+
+			pdf.render( fileName, doc, opts );
 
 			QMessageBox::information( this, tr( "Markdown processed" ),
 				tr( "PDF generated. Have a look at the result. Thank you." ) );
