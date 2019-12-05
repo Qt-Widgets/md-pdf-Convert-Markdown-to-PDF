@@ -29,7 +29,9 @@ set( GUI_SRC main.cpp
 	main_window.hpp
 	main_window.ui
 	color_widget.hpp
-	color_widget.cpp )
+	color_widget.cpp
+	renderer.hpp
+	renderer.cpp )
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 

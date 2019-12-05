@@ -23,6 +23,7 @@
 // md-pdf include.
 #include "main_window.hpp"
 #include "md_parser.hpp"
+#include "renderer.hpp"
 
 // Qt include.
 #include <QFontDatabase>
@@ -110,10 +111,30 @@ MainWindow::selectMarkdown()
 void
 MainWindow::process()
 {
-	MD::Parser parser;
+	auto fileName = QFileDialog::getSaveFileName( this, tr( "Save as" ),
+		QDir::homePath(),
+		tr( "PDF (*.pdf)" ) );
 
-	auto doc = parser.parse( m_ui->m_fileName->text(), m_ui->m_recursive->isChecked() );
+	if( !fileName.isEmpty() )
+	{
+		if( !fileName.endsWith( QLatin1String( ".pdf" ), Qt::CaseInsensitive ) )
+			fileName.append( QLatin1String( ".pdf" ) );
 
-	QMessageBox::information( this, tr( "Markdown processed" ),
-		tr( "Document contains %1 items." ).arg( QString::number( doc->items().size() ) ) );
+		MD::Parser parser;
+
+		auto doc = parser.parse( m_ui->m_fileName->text(), m_ui->m_recursive->isChecked() );
+
+		if( !doc->isEmpty() )
+		{
+			PdfRenderer pdf;
+
+			pdf.render( fileName, doc );
+
+			QMessageBox::information( this, tr( "Markdown processed" ),
+				tr( "PDF generated. Have a look at the result. Thank you." ) );
+		}
+		else
+			QMessageBox::warning( this, tr( "Markdown is empty" ),
+				tr( "Input Markdown file is empty. Nothing saved." ) );
+	}
 }
