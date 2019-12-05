@@ -53,11 +53,13 @@ ColorWidget::setColor( const QColor & c )
 }
 
 void
-ColorWidget::paintEvent( QPaintEvent * )
+ColorWidget::paintEvent( QPaintEvent * e )
 {
 	QPainter p( this );
 
 	p.setPen( m_color );
 	p.setBrush( m_color );
 	p.drawRect( frameRect() );
+
+	QFrame::paintEvent( e );
 }
