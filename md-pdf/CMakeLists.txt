@@ -47,9 +47,11 @@ target_link_libraries( md-parser Qt5::Core )
 
 add_executable( md-pdf-gui ${GUI_SRC} )
 
+add_dependencies( md-pdf-gui podofo-lib )
+
 if( WIN32 )
 	target_link_libraries( md-pdf-gui md-parser podofo freetype
-		fontconfig jpeg z Qt5::Widgets gdi32 ws_win32 )
+      jpeg zlibwapi Qt5::Widgets )
 else()
 	target_link_libraries( md-pdf-gui md-parser podofo freetype
 		fontconfig jpeg z Qt5::Widgets ${CMAKE_THREAD_LIBS_INIT} )
