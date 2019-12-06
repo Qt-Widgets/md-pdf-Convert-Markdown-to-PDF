@@ -34,8 +34,10 @@ set( GUI_SRC main.cpp
 	renderer.cpp )
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/podofo-0.9.6
-	${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-0.9.6 )
+	${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/podofo-trunk/src
+	${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-trunk )
+
+link_directories( ${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-trunk/src/podofo )
 
 find_package( Threads )
 
@@ -45,7 +47,7 @@ add_library( md-parser STATIC ${LIB_SRC} )
 
 target_link_libraries( md-parser Qt5::Core )
 
-link_directories( ${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-0.9.6/src )
+link_directories( ${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-trunk/src )
 
 add_executable( md-pdf-gui ${GUI_SRC} )
 

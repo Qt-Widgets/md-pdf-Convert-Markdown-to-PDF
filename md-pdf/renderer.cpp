@@ -64,7 +64,8 @@ PdfFont * createFont( const QString & name, bool bold, bool italic, float size,
 	PdfStreamedDocument * doc )
 {
 	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic , false,
-		PdfEncodingFactory::GlobalIdentityEncodingInstance() );
+		PdfEncodingFactory::GlobalIdentityEncodingInstance(),
+		PdfFontCache::eFontCreationFlags_None );
 
 	if( !font )
 		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
