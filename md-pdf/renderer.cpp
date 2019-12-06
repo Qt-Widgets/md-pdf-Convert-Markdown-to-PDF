@@ -91,6 +91,17 @@ void createPage( PdfAuxData & pdfData )
 		c_margin, pdfData.page->GetPageSize().GetHeight() - c_margin };
 }
 
+PdfString createPdfString( const QString & text )
+{
+	return PdfString( reinterpret_cast< pdf_utf8* > ( text.toUtf8().data() ) );
+}
+
+QString createQString( const PdfString & str )
+{
+	return QString::fromUtf8( str.GetStringUtf8().c_str(),
+		static_cast< int > ( str.GetCharacterLength() ) );
+}
+
 void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Heading * item, QSharedPointer< MD::Document > doc )
 {
@@ -105,22 +116,63 @@ void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		pdfData.coords.margins.right;
 
 	const auto lines = pdfData.painter->GetMultiLineTextAsLines(
-		width, item->text().utf16() );
+		width, createPdfString( item->text() ) );
 
 	const double height = lines.size() * font->GetFontMetrics()->GetLineSpacing();
+	const double availableHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+		pdfData.coords.margins.bottom;
 
 	if( pdfData.coords.y - height > pdfData.coords.margins.bottom )
 	{
 		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
 			pdfData.coords.y - height,
-			width, height, item->text().toUtf8().data() );
+			width, height, createPdfString( item->text() ) );
 
 		pdfData.coords.y -= height;
 	}
-	else
+	else if( height <= availableHeight )
 	{
 		pdfData.painter->FinishPage();
 		createPage( pdfData );
+		drawHeading( pdfData, renderOpts, item, doc );
+	}
+	else
+	{
+		std::vector< PdfString > tmp;
+		double h = 0.0;
+		std::size_t i = 0;
+		double available = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+			pdfData.coords.margins.bottom;
+		const double spacing = font->GetFontMetrics()->GetLineSpacing();
+
+		while( available >= spacing )
+		{
+			tmp.push_back( lines.at( i ) );
+			h += spacing;
+			++i;
+			available -= spacing;
+		}
+
+		QString text;
+
+		for( const auto & s : tmp )
+			text.append( createQString( s ) );
+
+		QString toSave = item->text();
+		toSave.remove( text );
+
+		item->setText( toSave.simplified() );
+
+		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
+			pdfData.coords.y - h,
+			width, h, createPdfString( text ) );
+
+		pdfData.coords.y -= height;
+
+		pdfData.painter->FinishPage();
+
+		createPage( pdfData );
+
 		drawHeading( pdfData, renderOpts, item, doc );
 	}
 }
