@@ -138,9 +138,9 @@ MainWindow::process()
 
 			RenderOpts opts;
 
-			opts.m_textFont = m_ui->m_textFont->currentText();
+			opts.m_textFont = m_ui->m_textFont->currentFont().family();
 			opts.m_textFontSize = m_ui->m_textFontSize->value();
-			opts.m_codeFont = m_ui->m_codeFont->currentText();
+			opts.m_codeFont = m_ui->m_codeFont->currentFont().family();
 			opts.m_codeFontSize = m_ui->m_codeFontSize->value();
 			opts.m_linkColor = m_ui->m_linkColor->color();
 			opts.m_borderColor = m_ui->m_borderColor->color();
