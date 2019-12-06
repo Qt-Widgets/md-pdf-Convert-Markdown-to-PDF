@@ -26,7 +26,6 @@
 #include "renderer.hpp"
 
 // Qt include.
-#include <QFontDatabase>
 #include <QToolButton>
 #include <QColorDialog>
 #include <QFileDialog>
@@ -50,17 +49,6 @@ MainWindow::MainWindow()
 	m_ui->m_linkColor->setColor( Qt::blue );
 	m_ui->m_borderColor->setColor( Qt::black );
 	m_ui->m_codeBackground->setColor( Qt::lightGray );
-
-	QFontDatabase fd;
-	auto fonts = fd.families();
-	fonts.sort();
-
-	m_ui->m_textFont->addItems( fonts );
-	m_ui->m_textFont->setCurrentText( QApplication::font().family() );
-
-	m_ui->m_codeFont->addItems( fonts );
-	m_ui->m_codeFont->setCurrentText(
-		QFontDatabase::systemFont( QFontDatabase::FixedFont ).family() );
 
 	const auto codecs = QTextCodec::availableCodecs();
 	QStringList codecsNames;
