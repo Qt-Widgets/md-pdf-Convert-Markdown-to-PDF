@@ -67,6 +67,9 @@ MainWindow::MainWindow()
 	for( const auto & c : codecs )
 		codecsNames.append( c );
 
+	codecsNames.removeDuplicates();
+	codecsNames.sort();
+
 	m_ui->m_encoding->addItems( codecsNames );
 	m_ui->m_encoding->setCurrentText( QLatin1String( "UTF-8" ) );
 
