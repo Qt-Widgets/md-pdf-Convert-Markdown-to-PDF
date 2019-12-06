@@ -32,6 +32,7 @@
 #include <QFileDialog>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QTextCodec>
 
 // podofo include.
 #include <podofo/podofo.h>
@@ -59,6 +60,15 @@ MainWindow::MainWindow()
 	m_ui->m_codeFont->addItems( fonts );
 	m_ui->m_codeFont->setCurrentText(
 		QFontDatabase::systemFont( QFontDatabase::FixedFont ).family() );
+
+	const auto codecs = QTextCodec::availableCodecs();
+	QStringList codecsNames;
+
+	for( const auto & c : codecs )
+		codecsNames.append( c );
+
+	m_ui->m_encoding->addItems( codecsNames );
+	m_ui->m_encoding->setCurrentText( QLatin1String( "UTF-8" ) );
 
 	connect( m_ui->m_linkColorBtn, &QToolButton::clicked, this, &MainWindow::changeLinkColor );
 	connect( m_ui->m_borderColorBtn, &QToolButton::clicked, this, &MainWindow::changeBorderColor );
@@ -127,7 +137,8 @@ MainWindow::process()
 
 		MD::Parser parser;
 
-		auto doc = parser.parse( m_ui->m_fileName->text(), m_ui->m_recursive->isChecked() );
+		auto doc = parser.parse( m_ui->m_fileName->text(), m_ui->m_recursive->isChecked(),
+			QTextCodec::codecForName( m_ui->m_encoding->currentText().toLatin1() ) );
 
 		if( !doc->isEmpty() )
 		{

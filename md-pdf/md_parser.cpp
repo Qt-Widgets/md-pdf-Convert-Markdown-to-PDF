@@ -37,11 +37,11 @@ namespace MD {
 //
 
 QSharedPointer< Document >
-Parser::parse( const QString & fileName, bool recursive )
+Parser::parse( const QString & fileName, bool recursive, QTextCodec * codec )
 {
 	QSharedPointer< Document > doc( new Document );
 
-	parseFile( fileName, recursive, doc );
+	parseFile( fileName, recursive, doc, codec );
 
 	clearCache();
 
@@ -49,7 +49,8 @@ Parser::parse( const QString & fileName, bool recursive )
 }
 
 void
-Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc )
+Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc,
+	QTextCodec * codec )
 {
 	QFileInfo fi( fileName );
 
@@ -63,6 +64,8 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 			QStringList linksToParse;
 
 			QTextStream s( &f );
+			s.setCodec( codec );
+
 			TextStream stream( s );
 
 			parse( stream, doc, doc, linksToParse,
@@ -94,7 +97,7 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 						if( !doc->isEmpty() && doc->items().last()->type() != ItemType::PageBreak )
 							doc->appendItem( QSharedPointer< PageBreak > ( new PageBreak() ) );
 
-						parseFile( nextFile.absoluteFilePath(), recursive, doc );
+						parseFile( nextFile.absoluteFilePath(), recursive, doc, codec );
 					}
 				}
 			}

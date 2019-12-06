@@ -28,6 +28,7 @@
 
 // Qt include.
 #include <QTextStream>
+#include <QTextCodec>
 
 
 namespace MD {
@@ -43,10 +44,12 @@ public:
 	Parser() = default;
 	~Parser() = default;
 
-	QSharedPointer< Document > parse( const QString & fileName, bool recursive = true );
+	QSharedPointer< Document > parse( const QString & fileName, bool recursive = true,
+		QTextCodec * codec = QTextCodec::codecForName( "UTF-8" ) );
 
 private:
-	void parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc );
+	void parseFile( const QString & fileName, bool recursive, QSharedPointer< Document > doc,
+		QTextCodec * codec );
 	void clearCache();
 
 	enum class BlockType {

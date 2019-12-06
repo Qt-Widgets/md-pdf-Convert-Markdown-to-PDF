@@ -26,8 +26,6 @@
 // podofo include.
 #include <podofo/podofo.h>
 
-#include <QDebug>
-
 
 //
 // PdfRenderer
@@ -65,7 +63,8 @@ struct PdfAuxData {
 PdfFont * createFont( const QString & name, bool bold, bool italic, float size,
 	PdfStreamedDocument * doc )
 {
-	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic );
+	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic , false,
+		PdfEncodingFactory::GlobalIdentityEncodingInstance() );
 
 	if( !font )
 		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
