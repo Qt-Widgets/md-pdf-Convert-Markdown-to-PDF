@@ -145,6 +145,7 @@ MainWindow::process()
 
 			try {
 				pdf.render( fileName, doc, opts );
+				pdf.clean();
 
 				QMessageBox::information( this, tr( "Markdown processed..." ),
 					tr( "PDF generated. Have a look at the result. Thank you." ) );

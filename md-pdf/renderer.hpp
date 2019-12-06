@@ -60,6 +60,7 @@ public:
 
 	virtual void render( const QString & fileName, QSharedPointer< MD::Document > doc,
 		const RenderOpts & opts ) = 0;
+	virtual void clean() = 0;
 }; // class Renderer
 
 
@@ -77,6 +78,7 @@ public:
 
 	void render( const QString & fileName, QSharedPointer< MD::Document > doc,
 		const RenderOpts & opts ) override;
+	void clean() override;
 }; // class Renderer
 
 #endif // MD_PDF_RENDERER_HPP_INCLUDED
