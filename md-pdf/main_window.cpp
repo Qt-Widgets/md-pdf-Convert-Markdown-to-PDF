@@ -52,7 +52,8 @@ MainWindow::MainWindow()
 	m_ui->m_codeBackground->setColor( Qt::lightGray );
 
 	QFontDatabase fd;
-	const auto fonts = fd.families();
+	auto fonts = fd.families();
+	fonts.sort();
 
 	m_ui->m_textFont->addItems( fonts );
 	m_ui->m_textFont->setCurrentText( QApplication::font().family() );
