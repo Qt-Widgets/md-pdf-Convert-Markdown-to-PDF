@@ -24,6 +24,7 @@
 #include "main_window.hpp"
 #include "md_parser.hpp"
 #include "renderer.hpp"
+#include "progress.hpp"
 
 // Qt include.
 #include <QToolButton>
@@ -32,6 +33,7 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QTextCodec>
+#include <QThread>
 
 // podofo include.
 #include <podofo/podofo.h>
@@ -43,6 +45,7 @@
 
 MainWindow::MainWindow()
 	:	m_ui( new Ui::MainWindow() )
+	,	m_thread( new QThread( this ) )
 {
 	m_ui->setupUi( this );
 
@@ -77,6 +80,14 @@ MainWindow::MainWindow()
 	connect( m_ui->m_textFontSize, signal, this, &MainWindow::textFontSizeChanged );
 
 	adjustSize();
+
+	m_thread->start();
+}
+
+MainWindow::~MainWindow()
+{
+	m_thread->quit();
+	m_thread->wait();
 }
 
 void
@@ -139,7 +150,8 @@ MainWindow::process()
 
 		if( !doc->isEmpty() )
 		{
-			PdfRenderer pdf;
+			auto * pdf = new PdfRenderer();
+			pdf->moveToThread( m_thread );
 
 			RenderOpts opts;
 
@@ -151,18 +163,22 @@ MainWindow::process()
 			opts.m_borderColor = m_ui->m_borderColor->color();
 			opts.m_codeBackground = m_ui->m_codeBackground->color();
 
-			try {
-				pdf.render( fileName, doc, opts );
-				pdf.clean();
+			ProgressDlg progress( pdf, this );
 
+			pdf->render( fileName, doc, opts );
+
+			if( progress.exec() == QDialog::Accepted )
 				QMessageBox::information( this, tr( "Markdown processed..." ),
 					tr( "PDF generated. Have a look at the result. Thank you." ) );
-			}
-			catch( const PoDoFo::PdfError & e )
+			else
 			{
-				QMessageBox::critical( this, tr( "Error during rendering PDF..." ),
-					tr( "%1\n\nOutput PDF is broken. Sorry." )
-						.arg( QString::fromLatin1( e.what() ) ) );
+				if( !progress.errorMsg().isEmpty() )
+					QMessageBox::critical( this, tr( "Error during rendering PDF..." ),
+						tr( "%1\n\nOutput PDF is broken. Sorry." )
+							.arg( progress.errorMsg() ) );
+				else
+					QMessageBox::information( this, tr( "Canceled..." ),
+						tr( "PDF generation is canceled." ) );
 			}
 		}
 		else

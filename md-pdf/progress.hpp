@@ -20,47 +20,48 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MD_PDF_MAIN_WINDOW_HPP_INCLUDED
-#define MD_PDF_MAIN_WINDOW_HPP_INCLUDED
-
-
-// md-pdf include.
-#include "ui_main_window.h"
+#ifndef MD_PDF_PROGRESS_HPP_INCLUDED
+#define MD_PDF_PROGRESS_HPP_INCLUDED
 
 // Qt include.
-#include <QWidget>
-#include <QScopedPointer>
-#include <QThread>
+#include <QDialog>
+
+// md-pdf include.
+#include "renderer.hpp"
+#include "ui_progress.h"
 
 
 //
-// MainWindow
+// ProgressDlg
 //
 
-//! Main window.
-class MainWindow final
-	:	public QWidget
+//! Progress dialog.
+class ProgressDlg final
+	:	public QDialog
 {
 	Q_OBJECT
 
 public:
-	MainWindow();
-	~MainWindow() override;
+	ProgressDlg( PdfRenderer * render, QWidget * parent );
+	~ProgressDlg() override = default;
+
+	const QString & errorMsg() const;
+
+protected:
+	void closeEvent( QCloseEvent * e ) override;
 
 private slots:
-	void changeLinkColor();
-	void changeBorderColor();
-	void changeCodeBackground();
-	void selectMarkdown();
-	void process();
-	void codeFontSizeChanged( int i );
-	void textFontSizeChanged( int i );
+	void progress( int value );
+	void finished( bool terminated );
+	void cancel();
+	void error( const QString & msg );
 
 private:
-	QScopedPointer< Ui::MainWindow > m_ui;
-	QThread * m_thread;
+	PdfRenderer * m_render;
+	QScopedPointer< Ui::ProgressDlg > m_ui;
+	QString m_error;
 
-	Q_DISABLE_COPY( MainWindow )
-}; // class MainWindow
+	Q_DISABLE_COPY( ProgressDlg )
+}; // class ProgressDlg
 
-#endif // MD_PDF_MAIN_WINDOW_HPP_INCLUDED
+#endif // MD_PDF_PROGRESS_HPP_INCLUDED

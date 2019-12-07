@@ -31,7 +31,10 @@ set( GUI_SRC main.cpp
 	color_widget.hpp
 	color_widget.cpp
 	renderer.hpp
-	renderer.cpp )
+	renderer.cpp
+	progress.hpp
+	progress.cpp
+	progress.ui )
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/podofo-trunk/src

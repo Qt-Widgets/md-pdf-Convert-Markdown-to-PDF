@@ -28,6 +28,8 @@
 
 // Qt include.
 #include <QColor>
+#include <QObject>
+#include <QMutex>
 
 
 //
@@ -53,10 +55,18 @@ struct RenderOpts
 
 //! Abstract renderer.
 class Renderer
+	:	public QObject
 {
+	Q_OBJECT
+
+signals:
+	void progress( int percent );
+	void error( const QString & msg );
+	void done( bool terminated );
+
 public:
 	Renderer() = default;
-	virtual ~Renderer() = default;
+	~Renderer() override = default;
 
 	virtual void render( const QString & fileName, QSharedPointer< MD::Document > doc,
 		const RenderOpts & opts ) = 0;
@@ -72,13 +82,29 @@ public:
 class PdfRenderer
 	:	public Renderer
 {
+	Q_OBJECT
+
+signals:
+	void start();
+
 public:
-	PdfRenderer() = default;
+	PdfRenderer();
 	~PdfRenderer() override = default;
 
 	void render( const QString & fileName, QSharedPointer< MD::Document > doc,
 		const RenderOpts & opts ) override;
+	void terminate();
+
+private slots:
+	void renderImpl();
 	void clean() override;
+
+private:
+	QString m_fileName;
+	QSharedPointer< MD::Document > m_doc;
+	RenderOpts m_opts;
+	QMutex m_mutex;
+	bool m_terminate;
 }; // class Renderer
 
 #endif // MD_PDF_RENDERER_HPP_INCLUDED

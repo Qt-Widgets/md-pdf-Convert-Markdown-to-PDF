@@ -177,11 +177,39 @@ void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 }
 
+void drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Text * item, QSharedPointer< MD::Document > doc, double offset = 0.0 )
+{
+	auto * font = createFont( renderOpts.m_textFont, false, false,
+		renderOpts.m_textFontSize, pdfData.doc );
+
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	font = createFont( renderOpts.m_textFont, item->opts() & MD::TextOption::BoldText,
+		item->opts() & MD::TextOption::ItalicText,
+		renderOpts.m_textFontSize, pdfData.doc );
+}
+
+void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
+	double yOffsetMultiplier = 1.0 )
+{
+	pdfData.coords.x = pdfData.coords.margins.left + xOffset;
+	pdfData.coords.y -= yOffset * yOffsetMultiplier;
+
+	if( pdfData.coords.y - yOffset < pdfData.coords.margins.bottom )
+	{
+		pdfData.painter->FinishPage();
+		createPage( pdfData );
+		pdfData.coords.x = pdfData.coords.margins.left + xOffset;
+	}
+}
+
 void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 )
 {
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
+
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
 	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
@@ -189,22 +217,17 @@ void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		switch( (*it)->type() )
 		{
 			case MD::ItemType::Text :
+				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
+					doc, offset );
+				break;
+
 			case MD::ItemType::Link :
 			case MD::ItemType::Code :
+			case MD::ItemType::Image :
 				break;
 
 			case MD::ItemType::LineBreak :
-			{
-				pdfData.coords.x = pdfData.coords.margins.left + offset;
-				pdfData.coords.y -= lineHeight;
-
-				if( pdfData.coords.y < pdfData.coords.margins.bottom )
-				{
-					pdfData.painter->FinishPage();
-					createPage( pdfData );
-					pdfData.coords.x = pdfData.coords.margins.left + offset;
-				}
-			}
+				moveToNewLine( pdfData, offset, lineHeight );
 				break;
 
 			default :
@@ -212,87 +235,132 @@ void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		}
 	}
 
-	pdfData.coords.x = pdfData.coords.margins.left;
-	pdfData.coords.y -= lineHeight * 2.0;
-
-	if( pdfData.coords.y < pdfData.coords.margins.bottom )
-	{
-		pdfData.painter->FinishPage();
-		createPage( pdfData );
-	}
+	moveToNewLine( pdfData, 0.0, lineHeight, 2.0 );
 }
 
 } /* namespace anonymous */
+
+PdfRenderer::PdfRenderer()
+	:	m_terminate( false )
+{
+	connect( this, &PdfRenderer::start, this, &PdfRenderer::renderImpl,
+		Qt::QueuedConnection );
+}
 
 void
 PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > doc,
 	const RenderOpts & opts )
 {
-	PdfStreamedDocument document( fileName.toLocal8Bit().data() );
+	m_fileName = fileName;
+	m_doc = doc;
+	m_opts = opts;
 
-	PdfPainter painter;
+	emit start();
+}
+
+void
+PdfRenderer::terminate()
+{
+	QMutexLocker lock( &m_mutex );
+
+	m_terminate = true;
+}
+
+void
+PdfRenderer::renderImpl()
+{
+	{
+		const int itemsCount = m_doc->items().size();
+
+		emit progress( 0 );
+
+		PdfStreamedDocument document( m_fileName.toLocal8Bit().data() );
+
+		PdfPainter painter;
+
+		try {
+			int itemIdx = 0;
+
+			PdfAuxData pdfData;
+
+			pdfData.doc = &document;
+			pdfData.painter = &painter;
+			createPage( pdfData );
+
+			for( const auto & i : m_doc->items() )
+			{
+				++itemIdx;
+
+				{
+					QMutexLocker lock( &m_mutex );
+
+					if( m_terminate )
+						break;
+				}
+
+				switch( i->type() )
+				{
+					case MD::ItemType::Heading :
+						drawHeading( pdfData, m_opts, static_cast< MD::Heading* > ( i.data() ), m_doc );
+						break;
+
+					case MD::ItemType::Paragraph :
+						drawParagraph( pdfData, m_opts, static_cast< MD::Paragraph* > ( i.data() ), m_doc );
+						break;
+
+					case MD::ItemType::Code :
+					case MD::ItemType::List :
+					case MD::ItemType::Blockquote :
+					case MD::ItemType::Table :
+						break;
+
+					case MD::ItemType::PageBreak :
+					{
+						if( itemIdx < itemsCount )
+						{
+							painter.FinishPage();
+
+							createPage( pdfData );
+						}
+					}
+						break;
+
+					default :
+						break;
+				}
+
+				emit progress( (int)( (double) itemIdx / (double) itemsCount * 100.0 ) );
+			}
+
+			painter.FinishPage();
+
+			document.Close();
+
+			emit done( m_terminate );
+		}
+		catch( const PdfError & e )
+		{
+			try {
+				painter.FinishPage();
+				document.Close();
+			}
+			catch( ... )
+			{
+			}
+
+			emit error( QString::fromLatin1( e.what() ) );
+		}
+	}
 
 	try {
-		int pageIdx = 0;
-
-		PdfAuxData pdfData;
-
-		pdfData.doc = &document;
-		pdfData.painter = &painter;
-		createPage( pdfData );
-
-		for( const auto & i : doc->items() )
-		{
-			++pageIdx;
-
-			switch( i->type() )
-			{
-				case MD::ItemType::Heading :
-					drawHeading( pdfData, opts, static_cast< MD::Heading* > ( i.data() ), doc );
-					break;
-
-				case MD::ItemType::Paragraph :
-					drawParagraph( pdfData, opts, static_cast< MD::Paragraph* > ( i.data() ), doc );
-					break;
-
-				case MD::ItemType::Code :
-				case MD::ItemType::List :
-				case MD::ItemType::Blockquote :
-				case MD::ItemType::Table :
-					break;
-
-				case MD::ItemType::PageBreak :
-				{
-					if( pageIdx < doc->items().size() )
-					{
-						painter.FinishPage();
-
-						createPage( pdfData );
-					}
-				}
-					break;
-
-				default :
-					break;
-			}
-		}
-
-		painter.FinishPage();
-
-		document.Close();
+		clean();
 	}
 	catch( const PdfError & e )
 	{
-		try {
-			painter.FinishPage();
-			document.Close();
-		}
-		catch( ... )
-		{
-		}
-
-		throw e;
+		emit error( QString::fromLatin1( e.what() ) );
 	}
+
+	deleteLater();
 }
 
 void
