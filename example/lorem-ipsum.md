@@ -21,7 +21,7 @@ ipsum, pharetra a sem ut, tempor ullamcorper elit. Cras a mi enim.
 
 # Third
 
-_Duis tempor fermentum risus vel maximus._ In vitae pharetra eros. Integer blandit vitae est quis eleifend. Sed a nulla
+~~_Duis tempor fermentum risus vel maximus._~~ In vitae pharetra eros. Integer blandit vitae est quis eleifend. Sed a nulla
 vel ipsum dapibus semper. Suspendisse nec convallis turpis. `Vestibulum urna odio`, egestas non sagittis vel, luctus eu
 lorem. Vestibulum lorem quam, laoreet consequat fermentum in, fringilla eget diam. Aliquam diam sapien, tincidunt vitae
 nisl quis, mollis venenatis libero.
