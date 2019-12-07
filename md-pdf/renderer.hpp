@@ -31,6 +31,11 @@
 #include <QObject>
 #include <QMutex>
 
+// podofo include.
+#include <podofo/podofo.h>
+
+using namespace PoDoFo;
+
 
 //
 // RenderOpts
@@ -74,6 +79,31 @@ public:
 }; // class Renderer
 
 
+static const double c_margin = 25.0;
+
+struct PageMargins {
+	double left = c_margin;
+	double right = c_margin;
+	double top = c_margin;
+	double bottom = c_margin;
+}; // struct PageMargins
+
+struct CoordsPageAttribs {
+	PageMargins margins;
+	double pageWidth = 0.0;
+	double pageHeight = 0.0;
+	double x = 0.0;
+	double y = 0.0;
+}; // struct CoordsPageAttribs
+
+struct PdfAuxData {
+	PdfStreamedDocument * doc = nullptr;
+	PdfPainter * painter = nullptr;
+	PdfPage * page = nullptr;
+	CoordsPageAttribs coords;
+}; // struct PdfAuxData;
+
+
 //
 // PdfRenderer
 //
@@ -98,6 +128,21 @@ public:
 private slots:
 	void renderImpl();
 	void clean() override;
+
+private:
+	PdfFont * createFont( const QString & name, bool bold, bool italic, float size,
+		PdfStreamedDocument * doc );
+	void createPage( PdfAuxData & pdfData );
+	PdfString createPdfString( const QString & text );
+	QString createQString( const PdfString & str );
+	void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Heading * item, QSharedPointer< MD::Document > doc );
+	void drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Text * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+	void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
+		double yOffsetMultiplier = 1.0 );
+	void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
 
 private:
 	QString m_fileName;

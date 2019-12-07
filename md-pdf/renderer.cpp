@@ -23,222 +23,10 @@
 // md-pdf include.
 #include "renderer.hpp"
 
-// podofo include.
-#include <podofo/podofo.h>
-
 
 //
 // PdfRenderer
 //
-
-using namespace PoDoFo;
-
-
-namespace /* anonymous */ {
-
-static const double c_margin = 25.0;
-
-struct PageMargins {
-	double left = c_margin;
-	double right = c_margin;
-	double top = c_margin;
-	double bottom = c_margin;
-}; // struct PageMargins
-
-struct CoordsPageAttribs {
-	PageMargins margins;
-	double pageWidth = 0.0;
-	double pageHeight = 0.0;
-	double x = 0.0;
-	double y = 0.0;
-}; // struct CoordsPageAttribs
-
-struct PdfAuxData {
-	PdfStreamedDocument * doc = nullptr;
-	PdfPainter * painter = nullptr;
-	PdfPage * page = nullptr;
-	CoordsPageAttribs coords;
-}; // struct PdfAuxData;
-
-PdfFont * createFont( const QString & name, bool bold, bool italic, float size,
-	PdfStreamedDocument * doc )
-{
-	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic , false,
-		PdfEncodingFactory::GlobalIdentityEncodingInstance(),
-		PdfFontCache::eFontCreationFlags_None );
-
-	if( !font )
-		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
-
-	font->SetFontSize( size );
-
-	return font;
-}
-
-void createPage( PdfAuxData & pdfData )
-{
-	pdfData.page = pdfData.doc->CreatePage(
-		PdfPage::CreateStandardPageSize( ePdfPageSize_A4 ) );
-
-	if( !pdfData.page )
-		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
-
-	pdfData.painter->SetPage( pdfData.page );
-
-	pdfData.coords = { { c_margin, c_margin, c_margin, c_margin },
-		pdfData.page->GetPageSize().GetWidth(),
-		pdfData.page->GetPageSize().GetHeight(),
-		c_margin, pdfData.page->GetPageSize().GetHeight() - c_margin };
-}
-
-PdfString createPdfString( const QString & text )
-{
-	return PdfString( reinterpret_cast< pdf_utf8* > ( text.toUtf8().data() ) );
-}
-
-QString createQString( const PdfString & str )
-{
-	return QString::fromUtf8( str.GetStringUtf8().c_str(),
-		static_cast< int > ( str.GetCharacterLength() ) );
-}
-
-void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Heading * item, QSharedPointer< MD::Document > doc )
-{
-	PdfFont * font = createFont( renderOpts.m_textFont.toLocal8Bit().data(),
-		true, false, renderOpts.m_textFontSize + 16 - ( item->level() < 7 ? item->level() * 2 : 12 ),
-		pdfData.doc );
-
-	pdfData.painter->SetFont( font );
-	pdfData.painter->SetColor( 0.0, 0.0, 0.0 );
-
-	const double width = pdfData.coords.pageWidth - pdfData.coords.margins.left -
-		pdfData.coords.margins.right;
-
-	const auto lines = pdfData.painter->GetMultiLineTextAsLines(
-		width, createPdfString( item->text() ) );
-
-	const double height = lines.size() * font->GetFontMetrics()->GetLineSpacing();
-	const double availableHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
-		pdfData.coords.margins.bottom;
-
-	if( pdfData.coords.y - height > pdfData.coords.margins.bottom )
-	{
-		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
-			pdfData.coords.y - height,
-			width, height, createPdfString( item->text() ) );
-
-		pdfData.coords.y -= height;
-	}
-	else if( height <= availableHeight )
-	{
-		pdfData.painter->FinishPage();
-		createPage( pdfData );
-		drawHeading( pdfData, renderOpts, item, doc );
-	}
-	else
-	{
-		std::vector< PdfString > tmp;
-		double h = 0.0;
-		std::size_t i = 0;
-		double available = pdfData.coords.pageHeight - pdfData.coords.margins.top -
-			pdfData.coords.margins.bottom;
-		const double spacing = font->GetFontMetrics()->GetLineSpacing();
-
-		while( available >= spacing )
-		{
-			tmp.push_back( lines.at( i ) );
-			h += spacing;
-			++i;
-			available -= spacing;
-		}
-
-		QString text;
-
-		for( const auto & s : tmp )
-			text.append( createQString( s ) );
-
-		QString toSave = item->text();
-		toSave.remove( text );
-
-		item->setText( toSave.simplified() );
-
-		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
-			pdfData.coords.y - h,
-			width, h, createPdfString( text ) );
-
-		pdfData.coords.y -= height;
-
-		pdfData.painter->FinishPage();
-
-		createPage( pdfData );
-
-		drawHeading( pdfData, renderOpts, item, doc );
-	}
-}
-
-void drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Text * item, QSharedPointer< MD::Document > doc, double offset = 0.0 )
-{
-	auto * font = createFont( renderOpts.m_textFont, false, false,
-		renderOpts.m_textFontSize, pdfData.doc );
-
-	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
-
-	font = createFont( renderOpts.m_textFont, item->opts() & MD::TextOption::BoldText,
-		item->opts() & MD::TextOption::ItalicText,
-		renderOpts.m_textFontSize, pdfData.doc );
-}
-
-void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
-	double yOffsetMultiplier = 1.0 )
-{
-	pdfData.coords.x = pdfData.coords.margins.left + xOffset;
-	pdfData.coords.y -= yOffset * yOffsetMultiplier;
-
-	if( pdfData.coords.y - yOffset < pdfData.coords.margins.bottom )
-	{
-		pdfData.painter->FinishPage();
-		createPage( pdfData );
-		pdfData.coords.x = pdfData.coords.margins.left + xOffset;
-	}
-}
-
-void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 )
-{
-	auto * font = createFont( renderOpts.m_textFont, false, false,
-		renderOpts.m_textFontSize, pdfData.doc );
-
-	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
-
-	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
-	{
-		switch( (*it)->type() )
-		{
-			case MD::ItemType::Text :
-				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
-					doc, offset );
-				break;
-
-			case MD::ItemType::Link :
-			case MD::ItemType::Code :
-			case MD::ItemType::Image :
-				break;
-
-			case MD::ItemType::LineBreak :
-				moveToNewLine( pdfData, offset, lineHeight );
-				break;
-
-			default :
-				break;
-		}
-	}
-
-	moveToNewLine( pdfData, 0.0, lineHeight, 2.0 );
-}
-
-} /* namespace anonymous */
 
 PdfRenderer::PdfRenderer()
 	:	m_terminate( false )
@@ -367,4 +155,211 @@ void
 PdfRenderer::clean()
 {
 	PdfEncodingFactory::FreeGlobalEncodingInstances();
+}
+
+PdfFont *
+PdfRenderer::createFont( const QString & name, bool bold, bool italic, float size,
+	PdfStreamedDocument * doc )
+{
+	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic , false,
+		PdfEncodingFactory::GlobalIdentityEncodingInstance(),
+		PdfFontCache::eFontCreationFlags_None );
+
+	if( !font )
+		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
+
+	font->SetFontSize( size );
+
+	return font;
+}
+
+void
+PdfRenderer::createPage( PdfAuxData & pdfData )
+{
+	pdfData.page = pdfData.doc->CreatePage(
+		PdfPage::CreateStandardPageSize( ePdfPageSize_A4 ) );
+
+	if( !pdfData.page )
+		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
+
+	pdfData.painter->SetPage( pdfData.page );
+
+	pdfData.coords = { { c_margin, c_margin, c_margin, c_margin },
+		pdfData.page->GetPageSize().GetWidth(),
+		pdfData.page->GetPageSize().GetHeight(),
+		c_margin, pdfData.page->GetPageSize().GetHeight() - c_margin };
+}
+
+PdfString
+PdfRenderer::createPdfString( const QString & text )
+{
+	return PdfString( reinterpret_cast< pdf_utf8* > ( text.toUtf8().data() ) );
+}
+
+QString
+PdfRenderer::createQString( const PdfString & str )
+{
+	return QString::fromUtf8( str.GetStringUtf8().c_str(),
+		static_cast< int > ( str.GetCharacterLength() ) );
+}
+
+void
+PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Heading * item, QSharedPointer< MD::Document > doc )
+{
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return;
+	}
+
+	PdfFont * font = createFont( renderOpts.m_textFont.toLocal8Bit().data(),
+		true, false, renderOpts.m_textFontSize + 16 - ( item->level() < 7 ? item->level() * 2 : 12 ),
+		pdfData.doc );
+
+	pdfData.painter->SetFont( font );
+	pdfData.painter->SetColor( 0.0, 0.0, 0.0 );
+
+	const double width = pdfData.coords.pageWidth - pdfData.coords.margins.left -
+		pdfData.coords.margins.right;
+
+	const auto lines = pdfData.painter->GetMultiLineTextAsLines(
+		width, createPdfString( item->text() ) );
+
+	const double height = lines.size() * font->GetFontMetrics()->GetLineSpacing();
+	const double availableHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+		pdfData.coords.margins.bottom;
+
+	if( pdfData.coords.y - height > pdfData.coords.margins.bottom )
+	{
+		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
+			pdfData.coords.y - height,
+			width, height, createPdfString( item->text() ) );
+
+		pdfData.coords.y -= height;
+	}
+	else if( height <= availableHeight )
+	{
+		pdfData.painter->FinishPage();
+		createPage( pdfData );
+		drawHeading( pdfData, renderOpts, item, doc );
+	}
+	else
+	{
+		std::vector< PdfString > tmp;
+		double h = 0.0;
+		std::size_t i = 0;
+		double available = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+			pdfData.coords.margins.bottom;
+		const double spacing = font->GetFontMetrics()->GetLineSpacing();
+
+		while( available >= spacing )
+		{
+			tmp.push_back( lines.at( i ) );
+			h += spacing;
+			++i;
+			available -= spacing;
+		}
+
+		QString text;
+
+		for( const auto & s : tmp )
+			text.append( createQString( s ) );
+
+		QString toSave = item->text();
+		toSave.remove( text );
+
+		item->setText( toSave.simplified() );
+
+		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
+			pdfData.coords.y - h,
+			width, h, createPdfString( text ) );
+
+		pdfData.coords.y -= height;
+
+		pdfData.painter->FinishPage();
+
+		createPage( pdfData );
+
+		drawHeading( pdfData, renderOpts, item, doc );
+	}
+}
+
+void
+PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Text * item, QSharedPointer< MD::Document > doc, double offset )
+{
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return;
+	}
+
+	auto * font = createFont( renderOpts.m_textFont, false, false,
+		renderOpts.m_textFontSize, pdfData.doc );
+
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	font = createFont( renderOpts.m_textFont, item->opts() & MD::TextOption::BoldText,
+		item->opts() & MD::TextOption::ItalicText,
+		renderOpts.m_textFontSize, pdfData.doc );
+}
+
+void
+PdfRenderer::moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
+	double yOffsetMultiplier )
+{
+	pdfData.coords.x = pdfData.coords.margins.left + xOffset;
+	pdfData.coords.y -= yOffset * yOffsetMultiplier;
+
+	if( pdfData.coords.y - yOffset < pdfData.coords.margins.bottom )
+	{
+		pdfData.painter->FinishPage();
+		createPage( pdfData );
+		pdfData.coords.x = pdfData.coords.margins.left + xOffset;
+	}
+}
+
+void
+PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset )
+{
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return;
+	}
+
+	auto * font = createFont( renderOpts.m_textFont, false, false,
+		renderOpts.m_textFontSize, pdfData.doc );
+
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
+	{
+		switch( (*it)->type() )
+		{
+			case MD::ItemType::Text :
+				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
+					doc, offset );
+				break;
+
+			case MD::ItemType::Link :
+			case MD::ItemType::Code :
+			case MD::ItemType::Image :
+				break;
+
+			case MD::ItemType::LineBreak :
+				moveToNewLine( pdfData, offset, lineHeight );
+				break;
+
+			default :
+				break;
+		}
+	}
+
+	moveToNewLine( pdfData, 0.0, lineHeight, 2.0 );
 }
