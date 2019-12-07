@@ -2,7 +2,7 @@
 
 ## First
 
-_**Lorem ipsum dolor sit amet,**_ consectetur adipiscing elit. Aenean id tortor rhoncus, imperdiet odio at, cursus risus.
+_**Lorem ipsum dolor sit amet, consectetur adipiscing elit.**_ Aenean id tortor rhoncus, imperdiet odio at, cursus risus.
 Mauris arcu ipsum, gravida quis ornare id, tempor sodales nisi. Nam eu tortor vitae nibh interdum pulvinar. Mauris
 ut nibh et metus maximus sollicitudin eu nec mi. Maecenas ac tellus quis lacus lobortis suscipit. Fusce dapibus
 consectetur ipsum, eu tristique lacus tristique ac. Donec ut dolor vel nulla vehicula condimentum. Class aptent

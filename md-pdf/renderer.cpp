@@ -305,6 +305,30 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	font = createFont( renderOpts.m_textFont, item->opts() & MD::TextOption::BoldText,
 		item->opts() & MD::TextOption::ItalicText,
 		renderOpts.m_textFontSize, pdfData.doc );
+
+	if( item->opts() & MD::TextOption::StrikethroughText )
+		font->SetStrikeOut( true );
+
+	const auto words = item->text().split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
+
+	pdfData.painter->SetFont( font );
+
+	for( const auto & w : words )
+	{
+		const auto str = createPdfString( w );
+
+		const auto length = font->GetFontMetrics()->StringWidth( str );
+
+		if( pdfData.coords.x + length <= pdfData.coords.pageWidth - pdfData.coords.margins.right )
+		{
+			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+			pdfData.coords.x += length;
+			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+			pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
+		}
+		else
+			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+	}
 }
 
 void
@@ -338,8 +362,18 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
+	pdfData.coords.y -= lineHeight;
+	pdfData.coords.x = pdfData.coords.margins.left + offset;
+
 	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
 	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return;
+		}
+
 		switch( (*it)->type() )
 		{
 			case MD::ItemType::Text :

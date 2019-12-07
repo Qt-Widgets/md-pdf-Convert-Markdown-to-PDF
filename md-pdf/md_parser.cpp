@@ -1173,7 +1173,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 						data.lexems.append( Lex::Bold );
 					}
 					else if( style == QLatin1String( "***" ) || style == QLatin1String( "___" ) ||
-						style == QLatin1String( "__*" ) || style == QLatin1String( "**_" ) ||
+						style == QLatin1String( "_**" ) || style == QLatin1String( "**_" ) ||
 						style == QLatin1String( "*__" ) || style == QLatin1String( "__*" ) )
 					{
 						createTextObj( text.simplified() );
