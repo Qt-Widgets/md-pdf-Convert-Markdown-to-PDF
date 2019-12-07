@@ -177,6 +177,51 @@ void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 }
 
+void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 )
+{
+	auto * font = createFont( renderOpts.m_textFont, false, false,
+		renderOpts.m_textFontSize, pdfData.doc );
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
+	{
+		switch( (*it)->type() )
+		{
+			case MD::ItemType::Text :
+			case MD::ItemType::Link :
+			case MD::ItemType::Code :
+				break;
+
+			case MD::ItemType::LineBreak :
+			{
+				pdfData.coords.x = pdfData.coords.margins.left + offset;
+				pdfData.coords.y -= lineHeight;
+
+				if( pdfData.coords.y < pdfData.coords.margins.bottom )
+				{
+					pdfData.painter->FinishPage();
+					createPage( pdfData );
+					pdfData.coords.x = pdfData.coords.margins.left + offset;
+				}
+			}
+				break;
+
+			default :
+				break;
+		}
+	}
+
+	pdfData.coords.x = pdfData.coords.margins.left;
+	pdfData.coords.y -= lineHeight * 2.0;
+
+	if( pdfData.coords.y < pdfData.coords.margins.bottom )
+	{
+		pdfData.painter->FinishPage();
+		createPage( pdfData );
+	}
+}
+
 } /* namespace anonymous */
 
 void
@@ -207,6 +252,9 @@ PdfRenderer::render( const QString & fileName, QSharedPointer< MD::Document > do
 					break;
 
 				case MD::ItemType::Paragraph :
+					drawParagraph( pdfData, opts, static_cast< MD::Paragraph* > ( i.data() ), doc );
+					break;
+
 				case MD::ItemType::Code :
 				case MD::ItemType::List :
 				case MD::ItemType::Blockquote :

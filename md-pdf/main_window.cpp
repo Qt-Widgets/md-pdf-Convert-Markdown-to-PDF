@@ -46,9 +46,9 @@ MainWindow::MainWindow()
 {
 	m_ui->setupUi( this );
 
-	m_ui->m_linkColor->setColor( Qt::blue );
-	m_ui->m_borderColor->setColor( Qt::black );
-	m_ui->m_codeBackground->setColor( Qt::lightGray );
+	m_ui->m_linkColor->setColor( QColor( 33, 122, 255 ) );
+	m_ui->m_borderColor->setColor( QColor( 81, 81, 81 ) );
+	m_ui->m_codeBackground->setColor( QColor( 222, 222, 222 ) );
 
 	const auto codecs = QTextCodec::availableCodecs();
 	QStringList codecsNames;
@@ -71,7 +71,12 @@ MainWindow::MainWindow()
 	connect( m_ui->m_startBtn, &QPushButton::clicked,
 		this, &MainWindow::process );
 
-   adjustSize();
+	void (QSpinBox::*signal) ( int ) = &QSpinBox::valueChanged;
+
+	connect( m_ui->m_codeFontSize, signal, this, &MainWindow::codeFontSizeChanged );
+	connect( m_ui->m_textFontSize, signal, this, &MainWindow::textFontSizeChanged );
+
+	adjustSize();
 }
 
 void
@@ -164,4 +169,18 @@ MainWindow::process()
 			QMessageBox::warning( this, tr( "Markdown is empty..." ),
 				tr( "Input Markdown file is empty. Nothing saved." ) );
 	}
+}
+
+void
+MainWindow::codeFontSizeChanged( int i )
+{
+	if( i > m_ui->m_textFontSize->value() - 1 )
+		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() - 1 );
+}
+
+void
+MainWindow::textFontSizeChanged( int i )
+{
+	if( i <= m_ui->m_codeFontSize->value() )
+		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() - 1 );
 }

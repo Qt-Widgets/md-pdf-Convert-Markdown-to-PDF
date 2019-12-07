@@ -52,6 +52,8 @@ private slots:
 	void changeCodeBackground();
 	void selectMarkdown();
 	void process();
+	void codeFontSizeChanged( int i );
+	void textFontSizeChanged( int i );
 
 private:
 	QScopedPointer< Ui::MainWindow > m_ui;
