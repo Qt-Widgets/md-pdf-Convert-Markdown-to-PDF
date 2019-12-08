@@ -288,7 +288,8 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 void
 PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Text * item, QSharedPointer< MD::Document > doc, double offset )
+	MD::Text * item, QSharedPointer< MD::Document > doc, double offset,
+	bool firstInParagraph )
 {
 	{
 		QMutexLocker lock( &m_mutex );
@@ -299,6 +300,13 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
+
+	if( !firstInParagraph )
+	{
+		pdfData.painter->SetFont( font );
+		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+		pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
+	}
 
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
@@ -313,6 +321,8 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	pdfData.painter->SetFont( font );
 
+	int idx = 0;
+
 	for( const auto & w : words )
 	{
 		const auto str = createPdfString( w );
@@ -323,11 +333,23 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		{
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			pdfData.coords.x += length;
-			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
-			pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
+
+			if( idx + 1 < words.size() )
+			{
+				const auto spaceWidth = font->GetFontMetrics()->StringWidth( " " );
+
+				if( pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
+					pdfData.coords.margins.right )
+				{
+					pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+					pdfData.coords.x += spaceWidth;
+				}
+			}
 		}
 		else
 			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+
+		++idx;
 	}
 }
 
@@ -378,7 +400,7 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		{
 			case MD::ItemType::Text :
 				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
-					doc, offset );
+					doc, offset, it == item->items().begin() );
 				break;
 
 			case MD::ItemType::Link :
