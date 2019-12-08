@@ -294,6 +294,8 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
+	Q_UNUSED( doc )
+
 	{
 		QMutexLocker lock( &m_mutex );
 
@@ -370,6 +372,8 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 	MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
+	Q_UNUSED( doc )
+
 	{
 		QMutexLocker lock( &m_mutex );
 
@@ -382,7 +386,6 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 	auto * textFont = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
 
-	const auto x = pdfData.coords.x;
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 	const auto spaceWidth = font->GetFontMetrics()->StringWidth( " " );
 	auto rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
