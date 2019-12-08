@@ -144,6 +144,9 @@ private:
 		double yOffsetMultiplier = 1.0 );
 	void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+	void drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+		bool firstInParagraph );
 
 private:
 	QString m_fileName;

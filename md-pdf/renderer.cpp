@@ -139,7 +139,7 @@ PdfRenderer::renderImpl()
 			{
 			}
 
-			emit error( QString::fromLatin1( e.what() ) );
+			emit error( QString::fromLatin1( PdfError::ErrorMessage( e.GetError() ) ) );
 		}
 	}
 
@@ -148,7 +148,7 @@ PdfRenderer::renderImpl()
 	}
 	catch( const PdfError & e )
 	{
-		emit error( QString::fromLatin1( e.what() ) );
+		emit error( QString::fromLatin1( PdfError::ErrorMessage( e.GetError() ) ) );
 	}
 
 	deleteLater();
@@ -363,6 +363,100 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 }
 
 void
+PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+	bool firstInParagraph )
+{
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return;
+	}
+
+	auto * font = createFont( renderOpts.m_codeFont, false, false,
+		renderOpts.m_codeFontSize, pdfData.doc );
+	auto * textFont = createFont( renderOpts.m_textFont, false, false,
+		renderOpts.m_textFontSize, pdfData.doc );
+
+	const auto x = pdfData.coords.x;
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+	const auto spaceWidth = font->GetFontMetrics()->StringWidth( " " );
+	auto rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+	const auto rHeight = lineHeight;
+
+	if( !firstInParagraph && !newLine )
+	{
+		pdfData.painter->SetFont( textFont );
+		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+		pdfData.coords.x += spaceWidth;
+	}
+
+	pdfData.painter->SetFont( font );
+
+	const auto words = item->text().split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
+
+	for( auto it = words.begin(), last = words.end(); it != last; ++it )
+	{
+		auto str = createPdfString( *it );
+
+		const auto length = font->GetFontMetrics()->StringWidth( str );
+
+		if( pdfData.coords.x + length <= pdfData.coords.pageWidth - pdfData.coords.margins.right )
+		{
+			newLine = false;
+
+			pdfData.painter->Save();
+			pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+				renderOpts.m_codeBackground.greenF(),
+				renderOpts.m_codeBackground.blueF() );
+			pdfData.painter->SetStrokingColor( renderOpts.m_borderColor.redF(),
+				renderOpts.m_borderColor.greenF(),
+				renderOpts.m_borderColor.blueF() );
+			pdfData.painter->Rectangle( pdfData.coords.x, rY, length, rHeight );
+			pdfData.painter->Fill();
+			pdfData.painter->Restore();
+
+			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+			pdfData.coords.x += length;
+
+			if( it + 1 != last &&
+				( font->GetFontMetrics()->StringWidth( createPdfString( *(it + 1 ) ) ) +
+					pdfData.coords.x + spaceWidth ) < pdfData.coords.pageWidth -
+						pdfData.coords.margins.right )
+			{
+				if( pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
+					pdfData.coords.margins.right )
+				{
+					pdfData.painter->Save();
+					pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+						renderOpts.m_codeBackground.greenF(),
+						renderOpts.m_codeBackground.blueF() );
+					pdfData.painter->SetStrokingColor( renderOpts.m_borderColor.redF(),
+						renderOpts.m_borderColor.greenF(),
+						renderOpts.m_borderColor.blueF() );
+					pdfData.painter->Rectangle( pdfData.coords.x, rY,
+						spaceWidth, rHeight );
+					pdfData.painter->Fill();
+					pdfData.painter->Restore();
+
+					pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+					pdfData.coords.x += spaceWidth;
+				}
+			}
+		}
+		else
+		{
+			newLine = true;
+
+			moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
+
+			rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+		}
+	}
+}
+
+void
 PdfRenderer::moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
 	double yOffsetMultiplier )
 {
@@ -414,8 +508,12 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 					doc, newLine, offset, it == item->items().begin() );
 				break;
 
-			case MD::ItemType::Link :
 			case MD::ItemType::Code :
+				drawInlinedCode( pdfData, renderOpts, static_cast< MD::Code* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() );
+				break;
+
+			case MD::ItemType::Link :
 			case MD::ItemType::Image :
 				break;
 
