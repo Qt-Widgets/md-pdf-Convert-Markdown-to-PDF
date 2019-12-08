@@ -332,6 +332,25 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 }
 
 void
+PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+	bool firstInParagraph )
+{
+	pdfData.painter->Save();
+	pdfData.painter->SetColor( renderOpts.m_linkColor.redF(),
+		renderOpts.m_linkColor.greenF(),
+		renderOpts.m_linkColor.blueF() );
+
+	drawString( pdfData, renderOpts, item->text(),
+		item->textOptions() & MD::TextOption::BoldText,
+		item->textOptions() & MD::TextOption::ItalicText,
+		item->textOptions() & MD::TextOption::StrikethroughText,
+		doc, newLine, offset, firstInParagraph );
+
+	pdfData.painter->Restore();
+}
+
+void
 PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	const QString & str, bool bold, bool italic, bool strikethrough,
 	QSharedPointer< MD::Document > doc, bool & newLine, double offset,
@@ -558,6 +577,10 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				break;
 
 			case MD::ItemType::Link :
+				drawLink( pdfData, renderOpts, static_cast< MD::Link* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() );
+				break;
+
 			case MD::ItemType::Image :
 				break;
 
@@ -570,5 +593,5 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		}
 	}
 
-	moveToNewLine( pdfData, 0.0, lineHeight, 2.0 );
+	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
 }

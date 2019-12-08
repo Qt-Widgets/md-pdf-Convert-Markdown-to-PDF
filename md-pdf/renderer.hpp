@@ -151,6 +151,9 @@ private:
 		const QString & str, bool bold, bool italic, bool strikethrough,
 		QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
+	void drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
+		bool firstInParagraph = false );
 
 private:
 	QString m_fileName;
