@@ -66,6 +66,8 @@ Parser::parseFile( const QString & fileName, bool recursive, QSharedPointer< Doc
 			QTextStream s( &f );
 			s.setCodec( codec );
 
+			doc->appendItem( QSharedPointer< Anchor > ( new Anchor( fi.absoluteFilePath() ) ) );
+
 			TextStream stream( s );
 
 			parse( stream, doc, doc, linksToParse,

@@ -48,6 +48,27 @@ PageBreak::type() const
 	return ItemType::PageBreak;
 }
 
+//
+// Anchor
+//
+
+Anchor::Anchor( const QString & l )
+	:	m_label( l )
+{
+}
+
+ItemType
+Anchor::type() const
+{
+	return ItemType::Anchor;
+}
+
+const QString &
+Anchor::label() const
+{
+	return m_label;
+}
+
 
 //
 // Heading

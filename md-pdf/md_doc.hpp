@@ -77,7 +77,9 @@ enum class ItemType {
 	//! Document.
 	Document,
 	//! Page break.
-	PageBreak
+	PageBreak,
+	//! Anchor.
+	Anchor
 }; // enum class ItemType
 
 
@@ -117,6 +119,29 @@ public:
 private:
 	Q_DISABLE_COPY( PageBreak )
 }; // class PageBreak
+
+
+//
+// Anchor
+//
+
+//! Just an anchor.
+class Anchor final
+	:	public Item
+{
+public:
+	explicit Anchor( const QString & l );
+	~Anchor() override = default;
+
+	ItemType type() const override;
+
+	const QString & label() const;
+
+private:
+	Q_DISABLE_COPY( Anchor )
+
+	QString m_label;
+}; // class Anchor
 
 
 //

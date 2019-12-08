@@ -34,7 +34,9 @@ TEST_CASE( "empty" )
 {
 	MD::Parser p;
 	auto doc = p.parse( QLatin1String( "./test1.md" ) );
-	REQUIRE( doc->isEmpty() == true );
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Anchor );
 }
 
 TEST_CASE( "only text" )
@@ -43,10 +45,10 @@ TEST_CASE( "only text" )
 	auto doc = p.parse( QLatin1String( "./test2.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 1 );
 	REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
@@ -64,12 +66,12 @@ TEST_CASE( "two paragraphs" )
 	auto doc = parser.parse( QLatin1String( "./test3.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 
 	{
-		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 		REQUIRE( dp->items().size() == 1 );
 		REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
@@ -81,9 +83,9 @@ TEST_CASE( "two paragraphs" )
 	}
 
 	{
-		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
 
-		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
 
 		REQUIRE( dp->items().size() == 1 );
 		REQUIRE( dp->items().first()->type() == MD::ItemType::Text );
@@ -102,11 +104,11 @@ TEST_CASE( "three lines" )
 	auto doc = parser.parse( QLatin1String( "./test4.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -145,11 +147,11 @@ TEST_CASE( "with linebreak" )
 	auto doc = parser.parse( QLatin1String( "./test5.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 4 );
 
@@ -190,11 +192,11 @@ TEST_CASE( "text formatting" )
 	auto doc = parser.parse( QLatin1String( "./test6.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -233,11 +235,11 @@ TEST_CASE( "multiline formatting" )
 	auto doc = parser.parse( QLatin1String( "./test7.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -276,11 +278,11 @@ TEST_CASE( "multiline multiformatting" )
 	auto doc = parser.parse( QLatin1String( "./test8.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -322,11 +324,11 @@ TEST_CASE( "multiline multiformatting not continues" )
 	auto doc = parser.parse( QLatin1String( "./test9.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -367,11 +369,11 @@ TEST_CASE( "it's not a formatting" )
 	auto doc = parser.parse( QLatin1String( "./test10.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -410,11 +412,11 @@ TEST_CASE( "code" )
 	auto doc = parser.parse( QLatin1String( "./test11.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 1 );
 
@@ -433,11 +435,11 @@ TEST_CASE( "code in text" )
 	auto doc = parser.parse( QLatin1String( "./test12.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 3 );
 
@@ -468,11 +470,11 @@ TEST_CASE( "multilined inline code" )
 	auto doc = parser.parse( QLatin1String( "./test13.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 1 );
 
@@ -498,11 +500,11 @@ TEST_CASE( "three lines with \\r" )
 		auto doc = parser.parse( QLatin1String( "./test14.md" ) );
 
 		REQUIRE( doc->isEmpty() == false );
-		REQUIRE( doc->items().size() == 1 );
+		REQUIRE( doc->items().size() == 2 );
 
-		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 		REQUIRE( dp->items().size() == 3 );
 
@@ -551,22 +553,7 @@ TEST_CASE( "three paragraphs with \\r" )
 		auto doc = parser.parse( QLatin1String( "./test15.md" ) );
 
 		REQUIRE( doc->isEmpty() == false );
-		REQUIRE( doc->items().size() == 3 );
-
-		{
-			REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
-
-			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
-
-			REQUIRE( dp->items().size() == 1 );
-
-			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
-
-			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
-
-			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
-			REQUIRE( t->text() == QLatin1String( "Line 1..." ) );
-		}
+		REQUIRE( doc->items().size() == 4 );
 
 		{
 			REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
@@ -580,13 +567,28 @@ TEST_CASE( "three paragraphs with \\r" )
 			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
 
 			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
-			REQUIRE( t->text() == QLatin1String( "Line 2..." ) );
+			REQUIRE( t->text() == QLatin1String( "Line 1..." ) );
 		}
 
 		{
 			REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
 
 			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
+
+			REQUIRE( dp->items().size() == 1 );
+
+			REQUIRE( dp->items().at( 0 )->type() == MD::ItemType::Text );
+
+			auto t = static_cast< MD::Text* > ( dp->items().at( 0 ).data() );
+
+			REQUIRE( t->opts() == MD::TextOption::TextWithoutFormat );
+			REQUIRE( t->text() == QLatin1String( "Line 2..." ) );
+		}
+
+		{
+			REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::Paragraph );
+
+			auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 3 ).data() );
 
 			REQUIRE( dp->items().size() == 1 );
 
@@ -616,11 +618,11 @@ TEST_CASE( "and this is one paragraph" )
 		auto doc = parser.parse( QLatin1String( "./test16.md" ) );
 
 		REQUIRE( doc->isEmpty() == false );
-		REQUIRE( doc->items().size() == 1 );
+		REQUIRE( doc->items().size() == 2 );
 
-		REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-		auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+		auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 		REQUIRE( dp->items().size() == 3 );
 
@@ -662,11 +664,11 @@ TEST_CASE( "quote" )
 	auto doc = parser.parse( QLatin1String( "./test17.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Blockquote );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Blockquote );
 
-	auto bq = static_cast< MD::Blockquote* > ( doc->items().at( 0 ).data() );
+	auto bq = static_cast< MD::Blockquote* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( !bq->isEmpty() );
 	REQUIRE( bq->items().size() == 3 );
@@ -732,11 +734,11 @@ TEST_CASE( "quote with spaces" )
 	auto doc = parser.parse( QLatin1String( "./test18.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Blockquote );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Blockquote );
 
-	auto bq = static_cast< MD::Blockquote* > ( doc->items().at( 0 ).data() );
+	auto bq = static_cast< MD::Blockquote* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( !bq->isEmpty() );
 	REQUIRE( bq->items().size() == 3 );
@@ -802,9 +804,9 @@ TEST_CASE( "two quotes" )
 	auto doc = parser.parse( QLatin1String( "./test19.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 
-	for( int i = 0; i < 2; ++i )
+	for( int i = 1; i < 3; ++i )
 	{
 		REQUIRE( doc->items().at( i )->type() == MD::ItemType::Blockquote );
 
@@ -875,11 +877,11 @@ TEST_CASE( "code" )
 	auto doc = parser.parse( QLatin1String( "./test20.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Code );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Code );
 
-	auto c = static_cast< MD::Code* > ( doc->items().at( 0 ).data() );
+	auto c = static_cast< MD::Code* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( c->inlined() == false );
 	REQUIRE( c->text() ==
@@ -893,11 +895,11 @@ TEST_CASE( "indented code" )
 	auto doc = parser.parse( QLatin1String( "./test21.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Code );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Code );
 
-	auto c = static_cast< MD::Code* > ( doc->items().at( 0 ).data() );
+	auto c = static_cast< MD::Code* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( c->inlined() == false );
 	REQUIRE( c->text() ==
@@ -911,11 +913,11 @@ TEST_CASE( "indented by tabs code" )
 	auto doc = parser.parse( QLatin1String( "./test22.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Code );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Code );
 
-	auto c = static_cast< MD::Code* > ( doc->items().at( 0 ).data() );
+	auto c = static_cast< MD::Code* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( c->inlined() == false );
 	REQUIRE( c->text() ==
@@ -929,11 +931,11 @@ TEST_CASE( "simple unordered list" )
 	auto doc = parser.parse( QLatin1String( "./test23.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -985,11 +987,11 @@ TEST_CASE( "nested unordered list" )
 	auto doc = parser.parse( QLatin1String( "./test24.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1029,11 +1031,11 @@ TEST_CASE( "unordered list with paragraph" )
 	auto doc = parser.parse( QLatin1String( "./test25.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1086,11 +1088,11 @@ TEST_CASE( "nested unordered list with paragraph" )
 	auto doc = parser.parse( QLatin1String( "./test26.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1187,11 +1189,11 @@ TEST_CASE( "unordered list with code" )
 	auto doc = parser.parse( QLatin1String( "./test27.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1238,11 +1240,11 @@ TEST_CASE( "unordered list with code 2" )
 	auto doc = parser.parse( QLatin1String( "./test28.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1289,11 +1291,11 @@ TEST_CASE( "nested unordered list with paragraph and standalone paragraph" )
 	auto doc = parser.parse( QLatin1String( "./test29.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1382,9 +1384,9 @@ TEST_CASE( "nested unordered list with paragraph and standalone paragraph" )
 		}
 	}
 
-	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 
@@ -1403,11 +1405,11 @@ TEST_CASE( "three images" )
 	auto doc = parser.parse( QLatin1String( "./test30.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 6 );
 
@@ -1462,11 +1464,11 @@ TEST_CASE( "links" )
 	const QString wd = QDir().absolutePath() + QDir::separator();
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 4 );
+	REQUIRE( doc->items().size() == 9 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 5 );
 
@@ -1524,9 +1526,9 @@ TEST_CASE( "links" )
 
 
 	{
-		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
 
-		p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
+		p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
 
 		REQUIRE( p->items().size() == 2 );
 
@@ -1548,9 +1550,9 @@ TEST_CASE( "links" )
 	}
 
 	{
-		REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
+		REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::Paragraph );
 
-		p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
+		p = static_cast< MD::Paragraph* > ( doc->items().at( 3 ).data() );
 
 		REQUIRE( p->items().size() == 1 );
 
@@ -1562,7 +1564,7 @@ TEST_CASE( "links" )
 			QDir::separator() + wd + QLatin1String( "test31.md" ) );
 	}
 
-	REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::PageBreak );
+	REQUIRE( doc->items().at( 4 )->type() == MD::ItemType::PageBreak );
 }
 
 TEST_CASE( "code in blockquote" )
@@ -1572,11 +1574,11 @@ TEST_CASE( "code in blockquote" )
 	auto doc = parser.parse( QLatin1String( "./test32.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Blockquote );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Blockquote );
 
-	auto q = static_cast< MD::Blockquote* > ( doc->items().at( 0 ).data() );
+	auto q = static_cast< MD::Blockquote* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( q->items().size() == 1 );
 
@@ -1595,11 +1597,11 @@ TEST_CASE( "simple link" )
 	auto doc = parser.parse( QLatin1String( "./test33.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 
@@ -1618,11 +1620,11 @@ TEST_CASE( "styled link" )
 	auto doc = parser.parse( QLatin1String( "./test34.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 
@@ -1642,11 +1644,11 @@ TEST_CASE( "ordered list" )
 	auto doc = parser.parse( QLatin1String( "./test35.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -1751,11 +1753,11 @@ TEST_CASE( "link with caption" )
 	auto doc = parser.parse( QLatin1String( "./test36.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 
@@ -1774,21 +1776,7 @@ TEST_CASE( "wrong links" )
 	auto doc = parser.parse( QLatin1String( "./test37.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 16 );
-
-	{
-		REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
-
-		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
-
-		REQUIRE( p->items().size() == 1 );
-
-		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
-
-		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
-
-		REQUIRE( t->text() == QLatin1String( "[Google] ( www.google.com Google Shmoogle..." ) );
-	}
+	REQUIRE( doc->items().size() == 17 );
 
 	{
 		REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
@@ -1801,7 +1789,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[Google] (" ) );
+		REQUIRE( t->text() == QLatin1String( "[Google] ( www.google.com Google Shmoogle..." ) );
 	}
 
 	{
@@ -1815,7 +1803,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[Google" ) );
+		REQUIRE( t->text() == QLatin1String( "[Google] (" ) );
 	}
 
 	{
@@ -1829,7 +1817,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[Google]" ) );
+		REQUIRE( t->text() == QLatin1String( "[Google" ) );
 	}
 
 	{
@@ -1843,7 +1831,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[![Google](" ) );
+		REQUIRE( t->text() == QLatin1String( "[Google]" ) );
 	}
 
 	{
@@ -1857,7 +1845,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "![Google](" ) );
+		REQUIRE( t->text() == QLatin1String( "[![Google](" ) );
 	}
 
 	{
@@ -1871,7 +1859,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[Google] ( www.google.com \"Google Shmoogle...\"" ) );
+		REQUIRE( t->text() == QLatin1String( "![Google](" ) );
 	}
 
 	{
@@ -1885,13 +1873,27 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[![Google](https://www.google.com/logo.png)" ) );
+		REQUIRE( t->text() == QLatin1String( "[Google] ( www.google.com \"Google Shmoogle...\"" ) );
 	}
 
 	{
 		REQUIRE( doc->items().at( 8 )->type() == MD::ItemType::Paragraph );
 
 		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 8 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[![Google](https://www.google.com/logo.png)" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 9 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 9 ).data() );
 
 		REQUIRE( p->items().size() == 2 );
 
@@ -1909,20 +1911,6 @@ TEST_CASE( "wrong links" )
 	}
 
 	{
-		REQUIRE( doc->items().at( 9 )->type() == MD::ItemType::Paragraph );
-
-		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 9 ).data() );
-
-		REQUIRE( p->items().size() == 1 );
-
-		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
-
-		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
-
-		REQUIRE( t->text() == QLatin1String( "[^ref" ) );
-	}
-
-	{
 		REQUIRE( doc->items().at( 10 )->type() == MD::ItemType::Paragraph );
 
 		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 10 ).data() );
@@ -1933,7 +1921,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[" ) );
+		REQUIRE( t->text() == QLatin1String( "[^ref" ) );
 	}
 
 	{
@@ -1947,7 +1935,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[1]:" ) );
+		REQUIRE( t->text() == QLatin1String( "[" ) );
 	}
 
 	{
@@ -1975,7 +1963,7 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[text][link" ) );
+		REQUIRE( t->text() == QLatin1String( "[1]:" ) );
 	}
 
 	{
@@ -1989,13 +1977,27 @@ TEST_CASE( "wrong links" )
 
 		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
 
-		REQUIRE( t->text() == QLatin1String( "[text]#" ) );
+		REQUIRE( t->text() == QLatin1String( "[text][link" ) );
 	}
 
 	{
 		REQUIRE( doc->items().at( 15 )->type() == MD::ItemType::Paragraph );
 
 		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 15 ).data() );
+
+		REQUIRE( p->items().size() == 1 );
+
+		REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+
+		auto t = static_cast< MD::Text* > ( p->items().at( 0 ).data() );
+
+		REQUIRE( t->text() == QLatin1String( "[text]#" ) );
+	}
+
+	{
+		REQUIRE( doc->items().at( 16 )->type() == MD::ItemType::Paragraph );
+
+		auto p = static_cast< MD::Paragraph* > ( doc->items().at( 16 ).data() );
 
 		REQUIRE( p->items().size() == 1 );
 
@@ -2014,11 +2016,11 @@ TEST_CASE( "ordered list with tabs" )
 	auto doc = parser.parse( QLatin1String( "./test38.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -2123,11 +2125,11 @@ TEST_CASE( "wrong style" )
 	auto doc = parser.parse( QLatin1String( "./test39.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 0 ).data() );
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
@@ -2145,11 +2147,11 @@ TEST_CASE( "unfinished code" )
 	auto doc = parser.parse( QLatin1String( "./test40.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().first()->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Paragraph );
 
-	auto dp = static_cast< MD::Paragraph* > ( doc->items().first().data() );
+	auto dp = static_cast< MD::Paragraph* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( dp->items().size() == 2 );
 
@@ -2173,11 +2175,11 @@ TEST_CASE( "unordered list with paragraph with tabs" )
 	auto doc = parser.parse( QLatin1String( "./test41.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 3 );
 
@@ -2230,11 +2232,11 @@ TEST_CASE( "linked md" )
 	auto doc = parser.parse( QLatin1String( "./test42.md" ) );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 3 );
+	REQUIRE( doc->items().size() == 5 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 2 );
 
@@ -2260,11 +2262,16 @@ TEST_CASE( "linked md" )
 		REQUIRE( lnk->url() == wd + QLatin1String( "test42-1.md" ) );
 	}
 
-	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::PageBreak );
+	REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::PageBreak );
 
-	REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
+	REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::Anchor );
 
-	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
+	REQUIRE( static_cast< MD::Anchor* > ( doc->items().at( 3 ).data() )->label() ==
+		wd + QLatin1String( "test42-1.md" ) );
+
+	REQUIRE( doc->items().at( 4 )->type() == MD::ItemType::Paragraph );
+
+	auto p = static_cast< MD::Paragraph* > ( doc->items().at( 4 ).data() );
 
 	REQUIRE( p->items().size() == 1 );
 	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
@@ -2281,11 +2288,11 @@ TEST_CASE( "linked md (not recursive)" )
 	auto doc = parser.parse( QLatin1String( "./test42.md" ), false );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 2 );
 
@@ -2319,11 +2326,11 @@ TEST_CASE( "blockquote in list" )
 	auto doc = parser.parse( QLatin1String( "./test44.md" ), false );
 
 	REQUIRE( doc->isEmpty() == false );
-	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().size() == 2 );
 
-	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::List );
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::List );
 
-	auto l = static_cast< MD::List* > ( doc->items().at( 0 ).data() );
+	auto l = static_cast< MD::List* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( l->items().size() == 1 );
 
@@ -2367,7 +2374,9 @@ TEST_CASE( "footnote" )
 
 	auto doc = parser.parse( QLatin1String( "./test45.md" ), false );
 
-	REQUIRE( doc->isEmpty() );
+	REQUIRE( !doc->isEmpty() );
+	REQUIRE( doc->items().size() == 1 );
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Anchor );
 
 	REQUIRE( doc->footnotesMap().size() == 1 );
 
@@ -2405,9 +2414,9 @@ TEST_CASE( "headings" )
 	auto doc = parser.parse( QLatin1String( "./test46.md" ) );
 
 	REQUIRE( !doc->isEmpty() );
-	REQUIRE( doc->items().size() == 13 );
+	REQUIRE( doc->items().size() == 14 );
 
-	int idx = 0;
+	int idx = 1;
 
 	for( int i = 1; i < 4; ++i )
 	{
@@ -2462,9 +2471,9 @@ TEST_CASE( "tables" )
 	auto doc = parser.parse( QLatin1String( "./test47.md" ) );
 
 	REQUIRE( !doc->isEmpty() );
-	REQUIRE( doc->items().size() == 2 );
+	REQUIRE( doc->items().size() == 3 );
 
-	for( int i = 0; i < 2; ++i )
+	for( int i = 1; i < 3; ++i )
 	{
 		REQUIRE( doc->items().at( i )->type() == MD::ItemType::Table );
 
@@ -2526,12 +2535,12 @@ TEST_CASE( "tables" )
 		}
 	}
 
-	auto table = static_cast< MD::Table* > ( doc->items().at( 0 ).data() );
+	auto table = static_cast< MD::Table* > ( doc->items().at( 1 ).data() );
 
 	REQUIRE( table->columnAlignment( 0 ) == MD::Table::AlignLeft );
 	REQUIRE( table->columnAlignment( 1 ) == MD::Table::AlignLeft );
 
-	table = static_cast< MD::Table* > ( doc->items().at( 1 ).data() );
+	table = static_cast< MD::Table* > ( doc->items().at( 2 ).data() );
 
 	REQUIRE( table->columnAlignment( 0 ) == MD::Table::AlignCenter );
 	REQUIRE( table->columnAlignment( 1 ) == MD::Table::AlignRight );
