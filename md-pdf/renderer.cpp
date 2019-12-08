@@ -304,7 +304,12 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
 
-	if( !firstInParagraph && !newLine )
+	static const QString charsWithoutSpaceBefore = QLatin1String( ".,;" );
+
+	const auto words = item->text().split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
+
+	if( !firstInParagraph && !newLine && !words.isEmpty() &&
+		!charsWithoutSpaceBefore.contains( words.first() ) )
 	{
 		pdfData.painter->SetFont( font );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
@@ -319,8 +324,6 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	if( item->opts() & MD::TextOption::StrikethroughText )
 		font->SetStrikeOut( true );
-
-	const auto words = item->text().split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
 
 	pdfData.painter->SetFont( font );
 
