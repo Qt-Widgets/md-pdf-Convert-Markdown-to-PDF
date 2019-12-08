@@ -24,6 +24,23 @@
 #include "renderer.hpp"
 
 
+class PdfRendererError {
+public:
+	explicit PdfRendererError( const QString & reason )
+		:	m_what( reason )
+	{
+	}
+
+	const QString & what() const noexcept
+	{
+		return m_what;
+	}
+
+private:
+	QString m_what;
+}; // class PdfRendererError
+
+
 //
 // PdfRenderer
 //
@@ -141,6 +158,18 @@ PdfRenderer::renderImpl()
 
 			emit error( QString::fromLatin1( PdfError::ErrorMessage( e.GetError() ) ) );
 		}
+		catch( const PdfRendererError & e )
+		{
+			try {
+				painter.FinishPage();
+				document.Close();
+			}
+			catch( ... )
+			{
+			}
+
+			emit error( e.what() );
+		}
 	}
 
 	try {
@@ -169,7 +198,8 @@ PdfRenderer::createFont( const QString & name, bool bold, bool italic, float siz
 		PdfFontCache::eFontCreationFlags_None );
 
 	if( !font )
-		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
+		throw PdfRendererError( QString::fromLatin1( "Unable to create font: " ) + name +
+			QLatin1String( ". Please choose another one." ) );
 
 	font->SetFontSize( size );
 
@@ -183,7 +213,7 @@ PdfRenderer::createPage( PdfAuxData & pdfData )
 		PdfPage::CreateStandardPageSize( ePdfPageSize_A4 ) );
 
 	if( !pdfData.page )
-		PODOFO_RAISE_ERROR( ePdfError_InvalidHandle )
+		throw PdfRendererError( QLatin1String( "Oops, can't create empty page in PDF." ) );
 
 	pdfData.painter->SetPage( pdfData.page );
 
