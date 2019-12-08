@@ -324,6 +324,19 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
+	drawString( pdfData, renderOpts, item->text(),
+		item->opts() & MD::TextOption::BoldText,
+		item->opts() & MD::TextOption::ItalicText,
+		item->opts() & MD::TextOption::StrikethroughText,
+		doc, newLine, offset, firstInParagraph );
+}
+
+void
+PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	const QString & str, bool bold, bool italic, bool strikethrough,
+	QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+	bool firstInParagraph )
+{
 	Q_UNUSED( doc )
 
 	{
@@ -338,7 +351,7 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	static const QString charsWithoutSpaceBefore = QLatin1String( ".,;" );
 
-	const auto words = item->text().split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
+	const auto words = str.split( QLatin1Char( ' ' ), QString::SkipEmptyParts );
 
 	if( !firstInParagraph && !newLine && !words.isEmpty() &&
 		!charsWithoutSpaceBefore.contains( words.first() ) )
@@ -350,20 +363,17 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
-	font = createFont( renderOpts.m_textFont, item->opts() & MD::TextOption::BoldText,
-		item->opts() & MD::TextOption::ItalicText,
+	font = createFont( renderOpts.m_textFont, bold, italic,
 		renderOpts.m_textFontSize, pdfData.doc );
 
-	if( item->opts() & MD::TextOption::StrikethroughText )
+	if( strikethrough )
 		font->SetStrikeOut( true );
 
 	pdfData.painter->SetFont( font );
 
-	int idx = 0;
-
-	for( const auto & w : words )
+	for( auto it = words.begin(), last = words.end(); it != last; ++it )
 	{
-		const auto str = createPdfString( w );
+		const auto str = createPdfString( *it );
 
 		const auto length = font->GetFontMetrics()->StringWidth( str );
 
@@ -374,7 +384,7 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			pdfData.coords.x += length;
 
-			if( idx + 1 < words.size() )
+			if( it + 1 != last )
 			{
 				const auto spaceWidth = font->GetFontMetrics()->StringWidth( " " );
 
@@ -392,8 +402,6 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
 		}
-
-		++idx;
 	}
 }
 

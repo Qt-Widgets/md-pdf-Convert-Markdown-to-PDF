@@ -147,6 +147,10 @@ private:
 	void drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
+	void drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		const QString & str, bool bold, bool italic, bool strikethrough,
+		QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+		bool firstInParagraph );
 
 private:
 	QString m_fileName;
