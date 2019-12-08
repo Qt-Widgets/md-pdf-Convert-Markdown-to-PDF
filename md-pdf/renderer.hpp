@@ -138,7 +138,7 @@ private:
 	void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Heading * item, QSharedPointer< MD::Document > doc );
 	void drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::Text * item, QSharedPointer< MD::Document > doc, double offset = 0.0,
+		MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
 	void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
 		double yOffsetMultiplier = 1.0 );

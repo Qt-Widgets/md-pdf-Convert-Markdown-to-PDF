@@ -89,11 +89,13 @@ PdfRenderer::renderImpl()
 				switch( i->type() )
 				{
 					case MD::ItemType::Heading :
-						drawHeading( pdfData, m_opts, static_cast< MD::Heading* > ( i.data() ), m_doc );
+						drawHeading( pdfData, m_opts, static_cast< MD::Heading* > ( i.data() ),
+							m_doc );
 						break;
 
 					case MD::ItemType::Paragraph :
-						drawParagraph( pdfData, m_opts, static_cast< MD::Paragraph* > ( i.data() ), m_doc );
+						drawParagraph( pdfData, m_opts, static_cast< MD::Paragraph* > ( i.data() ),
+							m_doc );
 						break;
 
 					case MD::ItemType::Code :
@@ -117,7 +119,8 @@ PdfRenderer::renderImpl()
 						break;
 				}
 
-				emit progress( (int)( (double) itemIdx / (double) itemsCount * 100.0 ) );
+				emit progress( static_cast< int > ( static_cast< double > (itemIdx) /
+					static_cast< double > (itemsCount) * 100.0 ) );
 			}
 
 			painter.FinishPage();
@@ -288,7 +291,7 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 void
 PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Text * item, QSharedPointer< MD::Document > doc, double offset,
+	MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
 	{
@@ -301,7 +304,7 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
 
-	if( !firstInParagraph )
+	if( !firstInParagraph && !newLine )
 	{
 		pdfData.painter->SetFont( font );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
@@ -331,6 +334,8 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 		if( pdfData.coords.x + length <= pdfData.coords.pageWidth - pdfData.coords.margins.right )
 		{
+			newLine = false;
+
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			pdfData.coords.x += length;
 
@@ -347,7 +352,11 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			}
 		}
 		else
+		{
+			newLine = true;
+
 			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+		}
 
 		++idx;
 	}
@@ -387,6 +396,8 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	pdfData.coords.y -= lineHeight;
 	pdfData.coords.x = pdfData.coords.margins.left + offset;
 
+	bool newLine = false;
+
 	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
 	{
 		{
@@ -400,7 +411,7 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		{
 			case MD::ItemType::Text :
 				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
-					doc, offset, it == item->items().begin() );
+					doc, newLine, offset, it == item->items().begin() );
 				break;
 
 			case MD::ItemType::Link :
