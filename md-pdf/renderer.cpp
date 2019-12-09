@@ -355,7 +355,7 @@ QVector< QPair< QRectF, PdfPage* > > normalizeRects(
 
 		for( auto last = rects.cend(); it != last; ++it )
 		{
-			if( ( it->first.y() - to.first.y() ) < 0.001 )
+			if( qAbs( it->first.y() - to.first.y() ) < 0.001 )
 				to.first.setWidth( to.first.width() + it->first.width() );
 			else
 			{
@@ -365,8 +365,7 @@ QVector< QPair< QRectF, PdfPage* > > normalizeRects(
 			}
 		}
 
-		if( rects.size() > 1 )
-			ret.append( to );
+		ret.append( to );
 	}
 
 	return ret;
@@ -447,8 +446,6 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		pdfData.painter->SetFont( font );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 		const auto w = font->GetFontMetrics()->StringWidth( " " );
-		ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y, w, lineHeight ),
-			pdfData.page ) );
 		pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
 	}
 
@@ -479,7 +476,7 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-				font->GetFontMetrics()->StringWidth( str ), lineHeight ), pdfData.page ) );
+				length, lineHeight ), pdfData.page ) );
 			pdfData.coords.x += length;
 
 			if( it + 1 != last )
