@@ -30,6 +30,8 @@
 #include <QColor>
 #include <QObject>
 #include <QMutex>
+#include <QImage>
+#include <QNetworkReply>
 
 // podofo include.
 #include <podofo/podofo.h>
@@ -154,6 +156,10 @@ private:
 	void drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
+	void drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
+		bool firstInParagraph = false );
+	QImage loadImage( MD::Image * item );
 
 private:
 	QString m_fileName;
@@ -162,5 +168,40 @@ private:
 	QMutex m_mutex;
 	bool m_terminate;
 }; // class Renderer
+
+
+//
+// LoadImageFromNetwork
+//
+
+//! Loader of image from network.
+class LoadImageFromNetwork final
+	:	public QObject
+{
+	Q_OBJECT
+
+signals:
+	void start();
+
+public:
+	LoadImageFromNetwork( const QUrl & url, QThread * thread );
+	~LoadImageFromNetwork() override = default;
+
+	const QImage & image() const;
+	void load();
+
+private slots:
+	void loadImpl();
+	void loadFinished();
+	void loadError( QNetworkReply::NetworkError );
+
+private:
+	Q_DISABLE_COPY( LoadImageFromNetwork )
+
+	QThread * m_thread;
+	QImage m_img;
+	QNetworkReply * m_reply;
+	QUrl m_url;
+}; // class LoadImageFromNetwork
 
 #endif // MD_PDF_RENDERER_HPP_INCLUDED

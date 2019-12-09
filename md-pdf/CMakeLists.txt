@@ -7,17 +7,13 @@ if( ENABLE_COVERAGE )
     coveralls_turn_on_coverage()
 endif()
 
-if( ENABLE_COVERAGE )
-	set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
-    include( Coveralls )
-endif()
-
 set( CMAKE_AUTOMOC ON )
 set( CMAKE_AUTORCC ON )
 set( CMAKE_AUTOUIC ON )
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Network REQUIRED)
 
 set( LIB_SRC md_doc.hpp
     md_doc.cpp
@@ -54,4 +50,4 @@ link_directories( ${CMAKE_CURRENT_BINARY_DIR}/../3rdparty/podofo-trunk/src )
 
 add_executable( md-pdf-gui ${GUI_SRC} )
 
-target_link_libraries( md-pdf-gui md-parser ${PODOFO_LIB} Qt5::Widgets )
+target_link_libraries( md-pdf-gui md-parser ${PODOFO_LIB} Qt5::Widgets Qt5::Network )

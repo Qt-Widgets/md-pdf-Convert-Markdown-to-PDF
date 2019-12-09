@@ -1,5 +1,7 @@
 # Lorem Ipsum
 
+![Lorem Ipsum](https://www.lipsum.com/images/banners/grey_234x60.gif)
+
 ## First
 
 _**Lorem ipsum dolor sit amet, consectetur adipiscing elit.**_ Aenean id tortor rhoncus, imperdiet odio at, cursus risus.

@@ -23,6 +23,12 @@
 // md-pdf include.
 #include "renderer.hpp"
 
+// Qt include.
+#include <QFileInfo>
+#include <QNetworkAccessManager>
+#include <QThread>
+#include <QBuffer>
+
 
 class PdfRendererError {
 public:
@@ -336,18 +342,24 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
-	pdfData.painter->Save();
-	pdfData.painter->SetColor( renderOpts.m_linkColor.redF(),
-		renderOpts.m_linkColor.greenF(),
-		renderOpts.m_linkColor.blueF() );
+	if( item->img()->isEmpty() )
+	{
+		pdfData.painter->Save();
+		pdfData.painter->SetColor( renderOpts.m_linkColor.redF(),
+			renderOpts.m_linkColor.greenF(),
+			renderOpts.m_linkColor.blueF() );
 
-	drawString( pdfData, renderOpts, item->text(),
-		item->textOptions() & MD::TextOption::BoldText,
-		item->textOptions() & MD::TextOption::ItalicText,
-		item->textOptions() & MD::TextOption::StrikethroughText,
-		doc, newLine, offset, firstInParagraph );
+		drawString( pdfData, renderOpts, item->text(),
+			item->textOptions() & MD::TextOption::BoldText,
+			item->textOptions() & MD::TextOption::ItalicText,
+			item->textOptions() & MD::TextOption::StrikethroughText,
+			doc, newLine, offset, firstInParagraph );
 
-	pdfData.painter->Restore();
+		pdfData.painter->Restore();
+	}
+	else
+		drawImage( pdfData, renderOpts, item->img().data(), doc, newLine, offset,
+			firstInParagraph );
 }
 
 void
@@ -582,6 +594,8 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				break;
 
 			case MD::ItemType::Image :
+				drawImage( pdfData, renderOpts, static_cast< MD::Image* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() );
 				break;
 
 			case MD::ItemType::LineBreak :
@@ -594,4 +608,152 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 
 	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
+}
+
+void
+PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
+	bool firstInParagraph )
+{
+	Q_UNUSED( doc )
+
+	const auto img = loadImage( item );
+
+	if( !img.isNull() )
+	{
+		QByteArray data;
+		QBuffer buf( &data );
+
+		img.save( &buf, "jpg" );
+
+		PdfImage pdfImg( pdfData.doc );
+		pdfImg.LoadFromData( reinterpret_cast< unsigned char * >( data.data() ), data.size() );
+
+		newLine = true;
+
+		auto * font = createFont( renderOpts.m_textFont, false, false,
+			renderOpts.m_textFontSize, pdfData.doc );
+
+		const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+		if( !firstInParagraph )
+			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+		else
+			pdfData.coords.x += offset;
+
+		double x = 0.0;
+		double scale = 1.0;
+		const double availableWidth = pdfData.coords.pageWidth - pdfData.coords.margins.left -
+			pdfData.coords.margins.right - offset;
+		double availableHeight = pdfData.coords.y - pdfData.coords.margins.bottom;
+
+		if( pdfImg.GetWidth() > availableWidth )
+			scale = availableWidth / pdfImg.GetWidth();
+
+		const double pageHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+			pdfData.coords.margins.bottom;
+
+		if( pdfImg.GetHeight() * scale > pageHeight )
+		{
+			scale = pageHeight / ( pdfImg.GetHeight() * scale );
+
+			pdfData.painter->FinishPage();
+
+			createPage( pdfData );
+
+			availableHeight = pdfData.coords.y - pdfData.coords.margins.bottom;
+
+			pdfData.coords.x += offset;
+		}
+
+		if( pdfImg.GetHeight() * scale > availableHeight )
+			scale = availableHeight / ( pdfImg.GetHeight() * scale );
+
+		if( pdfImg.GetWidth() * scale < availableWidth )
+			x = ( availableWidth - pdfImg.GetWidth() * scale ) / 2.0;
+
+		pdfData.painter->DrawImage( pdfData.coords.x + x,
+			pdfData.coords.y - pdfImg.GetHeight() * scale,
+			&pdfImg, scale, scale );
+
+		pdfData.coords.y -= pdfImg.GetHeight() * scale;
+
+		moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+	}
+	else
+		throw PdfRendererError( QString::fromLatin1( "Unable to load image: " ) + item->url() );
+}
+
+//
+// LoadImageFromNetwork
+//
+
+LoadImageFromNetwork::LoadImageFromNetwork( const QUrl & url, QThread * thread )
+	:	m_thread( thread )
+	,	m_reply( nullptr )
+	,	m_url( url )
+{
+	connect( this, &LoadImageFromNetwork::start, this, &LoadImageFromNetwork::loadImpl,
+		Qt::QueuedConnection );
+}
+
+const QImage &
+LoadImageFromNetwork::image() const
+{
+	return m_img;
+}
+
+void
+LoadImageFromNetwork::load()
+{
+	emit start();
+}
+
+void
+LoadImageFromNetwork::loadImpl()
+{
+	QNetworkAccessManager * m = new QNetworkAccessManager( this );
+	m_reply = m->get( QNetworkRequest( m_url ) );
+
+	connect( m_reply, &QNetworkReply::finished, this, &LoadImageFromNetwork::loadFinished );
+	connect( m_reply,
+		static_cast< void(QNetworkReply::*)(QNetworkReply::NetworkError) >( &QNetworkReply::error ),
+		this, &LoadImageFromNetwork::loadError );
+}
+
+void
+LoadImageFromNetwork::loadFinished()
+{
+	m_img.loadFromData( m_reply->readAll() );
+
+	m_thread->quit();
+}
+
+void
+LoadImageFromNetwork::loadError( QNetworkReply::NetworkError )
+{
+	m_thread->quit();
+}
+
+QImage
+PdfRenderer::loadImage( MD::Image * item )
+{
+	if( QFileInfo::exists( item->url() ) )
+		return QImage( item->url() );
+	else if( !QUrl( item->url() ).isRelative() )
+	{
+		QThread thread;
+
+		LoadImageFromNetwork load( QUrl( item->url() ), &thread );
+
+		load.moveToThread( &thread );
+		thread.start();
+		load.start();
+		thread.wait();
+
+		return load.image();
+	}
+	else
+		throw PdfRendererError(
+			QString::fromLatin1( "Hmm, I don't know how to load this image: " ) + item->url() );
 }
