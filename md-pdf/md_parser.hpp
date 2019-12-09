@@ -370,9 +370,6 @@ private:
 					line.append( c );
 			}
 
-			if( !c.isNull() )
-				line.append( c );
-
 			return line;
 		}
 

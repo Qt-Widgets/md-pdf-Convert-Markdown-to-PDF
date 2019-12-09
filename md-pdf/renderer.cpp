@@ -704,6 +704,13 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	pdfData.coords.y -= lineHeight;
 	pdfData.coords.x = pdfData.coords.margins.left + offset;
 
+	if( pdfData.coords.y < pdfData.coords.margins.bottom )
+	{
+		pdfData.painter->FinishPage();
+		createPage( pdfData );
+		pdfData.coords.x = pdfData.coords.margins.left + offset;
+	}
+
 	bool newLine = false;
 
 	for( auto it = item->items().begin(), last = item->items().end(); it != last; ++it )
