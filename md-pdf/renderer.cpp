@@ -489,9 +489,27 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		}
 		else
 		{
-			newLine = true;
+			if( pdfData.coords.margins.left + offset + length <=
+				pdfData.coords.pageWidth - pdfData.coords.margins.right )
+			{
+				newLine = true;
 
-			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+				moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+
+				--it;
+			}
+			else
+			{
+				newLine = true;
+
+				moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+
+				pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+				ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+					font->GetFontMetrics()->StringWidth( str ), lineHeight ), pdfData.page ) );
+
+				moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+			}
 		}
 	}
 
@@ -727,9 +745,16 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 			pdfData.coords.x += offset;
 		}
+		else if( pdfImg.GetHeight() * scale > availableHeight )
+		{
+			pdfData.painter->FinishPage();
 
-		if( pdfImg.GetHeight() * scale > availableHeight )
-			scale = availableHeight / ( pdfImg.GetHeight() * scale );
+			createPage( pdfData );
+
+			availableHeight = pdfData.coords.y - pdfData.coords.margins.bottom;
+
+			pdfData.coords.x += offset;
+		}
 
 		if( pdfImg.GetWidth() * scale < availableWidth )
 			x = ( availableWidth - pdfImg.GetWidth() * scale ) / 2.0;
