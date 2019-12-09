@@ -575,28 +575,38 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			pdfData.coords.x += length;
 
-			if( it + 1 != last &&
-				( font->GetFontMetrics()->StringWidth( createPdfString( *(it + 1 ) ) ) +
-					pdfData.coords.x + spaceWidth ) < pdfData.coords.pageWidth -
-						pdfData.coords.margins.right )
+			if( it + 1 != last )
 			{
-				if( pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
-					pdfData.coords.margins.right )
+				if( font->GetFontMetrics()->StringWidth( createPdfString( *( it + 1 ) ) ) +
+						pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
+							pdfData.coords.margins.right )
 				{
-					pdfData.painter->Save();
-					pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
-						renderOpts.m_codeBackground.greenF(),
-						renderOpts.m_codeBackground.blueF() );
-					pdfData.painter->SetStrokingColor( renderOpts.m_borderColor.redF(),
-						renderOpts.m_borderColor.greenF(),
-						renderOpts.m_borderColor.blueF() );
-					pdfData.painter->Rectangle( pdfData.coords.x, rY,
-						spaceWidth, rHeight );
-					pdfData.painter->Fill();
-					pdfData.painter->Restore();
+					if( pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
+						pdfData.coords.margins.right )
+					{
+						pdfData.painter->Save();
+						pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+							renderOpts.m_codeBackground.greenF(),
+							renderOpts.m_codeBackground.blueF() );
+						pdfData.painter->SetStrokingColor( renderOpts.m_borderColor.redF(),
+							renderOpts.m_borderColor.greenF(),
+							renderOpts.m_borderColor.blueF() );
+						pdfData.painter->Rectangle( pdfData.coords.x, rY,
+							spaceWidth, rHeight );
+						pdfData.painter->Fill();
+						pdfData.painter->Restore();
 
-					pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
-					pdfData.coords.x += spaceWidth;
+						pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+						pdfData.coords.x += spaceWidth;
+					}
+				}
+				else
+				{
+					newLine = true;
+
+					moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
+
+					rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
 				}
 			}
 		}
@@ -604,9 +614,40 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 		{
 			newLine = true;
 
-			moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
+			if( pdfData.coords.margins.left + offset + length <=
+				pdfData.coords.pageWidth - pdfData.coords.margins.right )
+			{
+				moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
 
-			rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+				rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+
+				--it;
+			}
+			else
+			{
+				moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
+
+				rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+
+				pdfData.painter->Save();
+				pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+					renderOpts.m_codeBackground.greenF(),
+					renderOpts.m_codeBackground.blueF() );
+				pdfData.painter->SetStrokingColor( renderOpts.m_borderColor.redF(),
+					renderOpts.m_borderColor.greenF(),
+					renderOpts.m_borderColor.blueF() );
+				pdfData.painter->Rectangle( pdfData.coords.x, rY,
+					pdfData.coords.pageWidth - pdfData.coords.margins.left -
+						pdfData.coords.margins.right - offset, rHeight );
+				pdfData.painter->Fill();
+				pdfData.painter->Restore();
+
+				pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+
+				moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
+
+				rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
+			}
 		}
 	}
 }
