@@ -149,14 +149,14 @@ private:
 	void drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
-	void drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	QVector< QPair< QRectF, PdfPage* > > drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		const QString & str, bool bold, bool italic, bool strikethrough,
 		QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
 	void drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
-	void drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	QPair< QRectF, PdfPage* > drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
 	QImage loadImage( MD::Image * item );

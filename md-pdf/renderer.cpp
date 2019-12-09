@@ -29,6 +29,8 @@
 #include <QThread>
 #include <QBuffer>
 
+#include <QDebug>
+
 
 class PdfRendererError {
 public:
@@ -337,11 +339,44 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		doc, newLine, offset, firstInParagraph );
 }
 
+QVector< QPair< QRectF, PdfPage* > > normalizeRects(
+	const QVector< QPair< QRectF, PdfPage* > > & rects )
+{
+	QVector< QPair< QRectF, PdfPage* > > ret;
+
+	if( !rects.isEmpty() )
+	{
+		QPair< QRectF, PdfPage* > to( rects.first() );
+
+		auto it = rects.cbegin();
+		++it;
+
+		for( auto last = rects.cend(); it != last; ++it )
+		{
+			if( ( it->first.y() - to.first.y() ) < 0.001 )
+				to.first.setWidth( to.first.width() + it->first.width() );
+			else
+			{
+				ret.append( to );
+
+				to = *it;
+			}
+		}
+
+		if( rects.size() > 1 )
+			ret.append( to );
+	}
+
+	return ret;
+}
+
 void
 PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
+	QVector< QPair< QRectF, PdfPage* > > rects;
+
 	if( item->img()->isEmpty() )
 	{
 		pdfData.painter->Save();
@@ -349,20 +384,36 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			renderOpts.m_linkColor.greenF(),
 			renderOpts.m_linkColor.blueF() );
 
-		drawString( pdfData, renderOpts, item->text(),
+		rects = normalizeRects( drawString( pdfData, renderOpts, item->text(),
 			item->textOptions() & MD::TextOption::BoldText,
 			item->textOptions() & MD::TextOption::ItalicText,
 			item->textOptions() & MD::TextOption::StrikethroughText,
-			doc, newLine, offset, firstInParagraph );
+			doc, newLine, offset, firstInParagraph ) );
 
 		pdfData.painter->Restore();
 	}
 	else
-		drawImage( pdfData, renderOpts, item->img().data(), doc, newLine, offset,
-			firstInParagraph );
+		rects.append( drawImage( pdfData, renderOpts, item->img().data(), doc, newLine, offset,
+			firstInParagraph ) );
+
+	if( !QUrl( item->url() ).isRelative() )
+	{
+		for( const auto & r : qAsConst( rects ) )
+		{
+			auto * annot = r.second->CreateAnnotation( ePdfAnnotation_Link,
+				PdfRect( r.first.x(), r.first.y(), r.first.width(), r.first.height() ) );
+			annot->SetBorderStyle( 0.0, 0.0, 0.0 );
+
+			PdfAction action( ePdfAction_URI, pdfData.doc );
+			action.SetURI( PdfString( item->url().toLatin1().data() ) );
+
+			annot->SetAction( action );
+			annot->SetFlags( ePdfAnnotationFlags_NoZoom );
+		}
+	}
 }
 
-void
+QVector< QPair< QRectF, PdfPage* > >
 PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	const QString & str, bool bold, bool italic, bool strikethrough,
 	QSharedPointer< MD::Document > doc, bool & newLine, double offset,
@@ -370,15 +421,19 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	Q_UNUSED( doc )
 
+	QVector< QPair< QRectF, PdfPage * > > ret;
+
 	{
 		QMutexLocker lock( &m_mutex );
 
 		if( m_terminate )
-			return;
+			return ret;
 	}
 
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
+
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
 	static const QString charsWithoutSpaceBefore = QLatin1String( ".,;" );
 
@@ -389,10 +444,11 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	{
 		pdfData.painter->SetFont( font );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+		const auto w = font->GetFontMetrics()->StringWidth( " " );
+		ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y, w, lineHeight ),
+			pdfData.page ) );
 		pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
 	}
-
-	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
 	font = createFont( renderOpts.m_textFont, bold, italic,
 		renderOpts.m_textFontSize, pdfData.doc );
@@ -413,6 +469,8 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			newLine = false;
 
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+			ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+				font->GetFontMetrics()->StringWidth( str ), lineHeight ), pdfData.page ) );
 			pdfData.coords.x += length;
 
 			if( it + 1 != last )
@@ -422,6 +480,8 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				if( pdfData.coords.x + spaceWidth <= pdfData.coords.pageWidth -
 					pdfData.coords.margins.right )
 				{
+					ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+						spaceWidth, lineHeight ), pdfData.page ) );
 					pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 					pdfData.coords.x += spaceWidth;
 				}
@@ -434,6 +494,8 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			moveToNewLine( pdfData, offset, lineHeight, 1.0 );
 		}
 	}
+
+	return ret;
 }
 
 void
@@ -610,7 +672,7 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
 }
 
-void
+QPair< QRectF, PdfPage* >
 PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
@@ -678,7 +740,14 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 		pdfData.coords.y -= pdfImg.GetHeight() * scale;
 
+		QRectF r( pdfData.coords.x + x, pdfData.coords.y,
+			pdfImg.GetWidth() * scale, pdfImg.GetHeight() * scale );
+
+		auto * page = pdfData.page;
+
 		moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+
+		return qMakePair( r, page );
 	}
 	else
 		throw PdfRendererError( QString::fromLatin1( "Unable to load image: " ) + item->url() );
