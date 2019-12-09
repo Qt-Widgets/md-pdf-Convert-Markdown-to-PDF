@@ -83,6 +83,7 @@ public:
 
 
 static const double c_margin = 25.0;
+static const double c_beforeHeading = 15.0;
 
 struct PageMargins {
 	double left = c_margin;
@@ -161,6 +162,8 @@ private:
 		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
 	QImage loadImage( MD::Image * item );
+	void drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Code * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
 
 private:
 	QString m_fileName;

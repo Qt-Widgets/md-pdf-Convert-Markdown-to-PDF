@@ -124,6 +124,9 @@ PdfRenderer::renderImpl()
 						break;
 
 					case MD::ItemType::Code :
+						drawCode( pdfData, m_opts, static_cast< MD::Code* > ( i.data() ),
+							m_doc );
+						break;
 					case MD::ItemType::List :
 					case MD::ItemType::Blockquote :
 					case MD::ItemType::Table :
@@ -273,6 +276,8 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	const double height = lines.size() * font->GetFontMetrics()->GetLineSpacing();
 	const double availableHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
 		pdfData.coords.margins.bottom;
+
+	pdfData.coords.y -= c_beforeHeading;
 
 	if( pdfData.coords.y - height > pdfData.coords.margins.bottom )
 	{
@@ -446,7 +451,7 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		pdfData.painter->SetFont( font );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 		const auto w = font->GetFontMetrics()->StringWidth( " " );
-		pdfData.coords.x += font->GetFontMetrics()->StringWidth( " " );
+		pdfData.coords.x += w;
 	}
 
 	font = createFont( renderOpts.m_textFont, bold, italic,
@@ -698,6 +703,8 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
+	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
+
 	pdfData.coords.y -= lineHeight;
 	pdfData.coords.x = pdfData.coords.margins.left + offset;
 
@@ -749,8 +756,6 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				break;
 		}
 	}
-
-	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
 }
 
 QPair< QRectF, PdfPage* >
@@ -915,4 +920,76 @@ PdfRenderer::loadImage( MD::Image * item )
 	else
 		throw PdfRendererError(
 			tr( "Hmm, I don't know how to load this image: %1" ).arg( item->url() ) );
+}
+
+void
+PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Code * item, QSharedPointer< MD::Document > doc, double offset )
+{
+	Q_UNUSED( doc )
+
+	auto * textFont = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
+		pdfData.doc );
+	const auto textLHeight = textFont->GetFontMetrics()->GetLineSpacing();
+
+	if( pdfData.coords.y - textLHeight < pdfData.coords.margins.bottom )
+		createPage( pdfData );
+	else
+		pdfData.coords.y -= textLHeight * 2.0;
+
+	pdfData.coords.x = pdfData.coords.margins.left + offset;
+
+	const auto lines = item->text().split( QLatin1Char( '\n' ), QString::KeepEmptyParts );
+
+	auto * font = createFont( renderOpts.m_codeFont, false, false, renderOpts.m_codeFontSize,
+		pdfData.doc );
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	pdfData.painter->SetFont( font );
+
+	int i = 0;
+
+	while( i < lines.size() )
+	{
+		auto y = pdfData.coords.y;
+		int j = i;
+		double h = 0.0;
+
+		while( y - lineHeight > pdfData.coords.margins.bottom && j < lines.size() )
+		{
+			h += lineHeight;
+			y -= lineHeight;
+			++j;
+		}
+
+		if( i < j )
+		{
+			pdfData.painter->Save();
+			pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+				renderOpts.m_codeBackground.greenF(),
+				renderOpts.m_codeBackground.blueF() );
+			pdfData.painter->Rectangle( pdfData.coords.x, y,
+				pdfData.coords.pageWidth - pdfData.coords.x - pdfData.coords.margins.right,
+				 h + lineHeight );
+			pdfData.painter->Fill();
+			pdfData.painter->Restore();
+		}
+
+		for( ; i < j; ++i )
+		{
+			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y,
+				createPdfString( lines.at( i ) ) );
+
+			pdfData.coords.y -= lineHeight;
+		}
+
+		if( i < lines.size() )
+		{
+			createPage( pdfData );
+			pdfData.coords.x = pdfData.coords.margins.left + offset;
+			pdfData.coords.y -= lineHeight;
+		}
+	}
+
+	pdfData.coords.y -= lineHeight;
 }
