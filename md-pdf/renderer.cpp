@@ -206,8 +206,8 @@ PdfRenderer::createFont( const QString & name, bool bold, bool italic, float siz
 		PdfFontCache::eFontCreationFlags_None );
 
 	if( !font )
-		throw PdfRendererError( QString::fromLatin1( "Unable to create font: " ) + name +
-			QLatin1String( ". Please choose another one." ) );
+		throw PdfRendererError( tr( "Unable to create font: %1. Please choose another one." )
+			.arg( name ) );
 
 	font->SetFontSize( size );
 
@@ -254,6 +254,8 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		if( m_terminate )
 			return;
 	}
+
+	emit status( tr( "Drawing heading." ) );
 
 	PdfFont * font = createFont( renderOpts.m_textFont.toLocal8Bit().data(),
 		true, false, renderOpts.m_textFontSize + 16 - ( item->level() < 7 ? item->level() * 2 : 12 ),
@@ -460,6 +462,13 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	for( auto it = words.begin(), last = words.end(); it != last; ++it )
 	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return ret;
+		}
+
 		const auto str = createPdfString( *it );
 
 		const auto length = font->GetFontMetrics()->StringWidth( str );
@@ -553,6 +562,13 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 
 	for( auto it = words.begin(), last = words.end(); it != last; ++it )
 	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return;
+		}
+
 		auto str = createPdfString( *it );
 
 		const auto length = font->GetFontMetrics()->StringWidth( str );
@@ -678,6 +694,8 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			return;
 	}
 
+	emit status( tr( "Drawing paragraph." ) );
+
 	auto * font = createFont( renderOpts.m_textFont, false, false,
 		renderOpts.m_textFontSize, pdfData.doc );
 
@@ -737,6 +755,8 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	bool firstInParagraph )
 {
 	Q_UNUSED( doc )
+
+	emit status( tr( "Loading image." ) );
 
 	const auto img = loadImage( item );
 
@@ -816,7 +836,7 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		return qMakePair( r, page );
 	}
 	else
-		throw PdfRendererError( QString::fromLatin1( "Unable to load image: " ) + item->url() );
+		throw PdfRendererError( tr( "Unable to load image: %1" ).arg( item->url() ) );
 }
 
 //
@@ -890,5 +910,5 @@ PdfRenderer::loadImage( MD::Image * item )
 	}
 	else
 		throw PdfRendererError(
-			QString::fromLatin1( "Hmm, I don't know how to load this image: " ) + item->url() );
+			tr( "Hmm, I don't know how to load this image: %1" ).arg( item->url() ) );
 }

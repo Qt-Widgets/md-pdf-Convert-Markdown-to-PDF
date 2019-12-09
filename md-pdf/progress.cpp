@@ -42,6 +42,7 @@ ProgressDlg::ProgressDlg( PdfRenderer * render, QWidget * parent )
 	connect( m_render, &PdfRenderer::progress, this, &ProgressDlg::progress );
 	connect( m_render, &PdfRenderer::done, this, &ProgressDlg::finished );
 	connect( m_render, &PdfRenderer::error, this, &ProgressDlg::error );
+	connect( m_render, &PdfRenderer::status, this, &ProgressDlg::status );
 
 	connect( m_ui->m_cancel, &QPushButton::clicked,
 		this, &ProgressDlg::cancel );
@@ -92,4 +93,10 @@ ProgressDlg::error( const QString & msg )
 	m_error = msg;
 
 	reject();
+}
+
+void
+ProgressDlg::status( const QString & msg )
+{
+	m_ui->m_status->setText( msg );
 }

@@ -55,6 +55,7 @@ private slots:
 	void finished( bool terminated );
 	void cancel();
 	void error( const QString & msg );
+	void status( const QString & msg );
 
 private:
 	PdfRenderer * m_render;

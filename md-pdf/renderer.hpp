@@ -70,6 +70,7 @@ signals:
 	void progress( int percent );
 	void error( const QString & msg );
 	void done( bool terminated );
+	void status( const QString & msg );
 
 public:
 	Renderer() = default;
