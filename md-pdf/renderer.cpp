@@ -357,8 +357,10 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		doc, newLine, offset, firstInParagraph );
 }
 
-QVector< QPair< QRectF, PdfPage* > > normalizeRects(
-	const QVector< QPair< QRectF, PdfPage* > > & rects )
+namespace /* anonymous */ {
+
+QVector< QPair< QRectF, PdfPage* > >
+normalizeRects( const QVector< QPair< QRectF, PdfPage* > > & rects )
 {
 	QVector< QPair< QRectF, PdfPage* > > ret;
 
@@ -386,6 +388,8 @@ QVector< QPair< QRectF, PdfPage* > > normalizeRects(
 
 	return ret;
 }
+
+} /* namespace anonymous */
 
 QVector< QPair< QRectF, PdfPage* > >
 PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
@@ -717,11 +721,11 @@ PdfRenderer::moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset
 	}
 }
 
+namespace /* anonymous */ {
+
 QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > & rects,
 	double pageHeight )
 {
-	const QVector< QPair< QRectF, PdfPage* > > tmp = normalizeRects( rects );
-
 	struct AuxData{
 		double minY = 0.0;
 		double maxY = 0.0;
@@ -729,7 +733,7 @@ QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > &
 
 	QMap< PdfPage*, AuxData > map;
 
-	for( const auto & r : tmp )
+	for( const auto & r : rects )
 	{
 		if( !map.contains( r.second ) )
 			map[ r.second ] = { pageHeight, 0.0 };
@@ -748,6 +752,8 @@ QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > &
 
 	return ret;
 }
+
+} /* namespace anonymous */
 
 QVector< WhereDrawn >
 PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
@@ -823,7 +829,7 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		}
 	}
 
-	return toWhereDrawn( rects, pdfData.coords.pageHeight );
+	return toWhereDrawn( normalizeRects( rects ), pdfData.coords.pageHeight );
 }
 
 QPair< QRectF, PdfPage* >
