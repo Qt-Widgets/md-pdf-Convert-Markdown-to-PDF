@@ -127,6 +127,7 @@ PdfRenderer::renderImpl()
 						drawCode( pdfData, m_opts, static_cast< MD::Code* > ( i.data() ),
 							m_doc );
 						break;
+
 					case MD::ItemType::List :
 					case MD::ItemType::Blockquote :
 					case MD::ItemType::Table :
@@ -247,15 +248,17 @@ PdfRenderer::createQString( const PdfString & str )
 		static_cast< int > ( str.GetCharacterLength() ) );
 }
 
-void
+QVector< WhereDrawn >
 PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Heading * item, QSharedPointer< MD::Document > doc )
+	MD::Heading * item, QSharedPointer< MD::Document > doc, double offset )
 {
+	QVector< WhereDrawn > ret;
+
 	{
 		QMutexLocker lock( &m_mutex );
 
 		if( m_terminate )
-			return;
+			return ret;
 	}
 
 	emit status( tr( "Drawing heading." ) );
@@ -268,7 +271,7 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	pdfData.painter->SetColor( 0.0, 0.0, 0.0 );
 
 	const double width = pdfData.coords.pageWidth - pdfData.coords.margins.left -
-		pdfData.coords.margins.right;
+		pdfData.coords.margins.right - offset;
 
 	const auto lines = pdfData.painter->GetMultiLineTextAsLines(
 		width, createPdfString( item->text() ) );
@@ -281,17 +284,21 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	if( pdfData.coords.y - height > pdfData.coords.margins.bottom )
 	{
-		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
+		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left + offset,
 			pdfData.coords.y - height,
 			width, height, createPdfString( item->text() ) );
 
 		pdfData.coords.y -= height;
+
+		ret.append( { pdfData.page, pdfData.coords.y, height } );
+
+		return ret;
 	}
 	else if( height <= availableHeight )
 	{
 		pdfData.painter->FinishPage();
 		createPage( pdfData );
-		drawHeading( pdfData, renderOpts, item, doc );
+		return drawHeading( pdfData, renderOpts, item, doc, offset );
 	}
 	else
 	{
@@ -320,26 +327,30 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 		item->setText( toSave.simplified() );
 
-		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left,
+		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left + offset,
 			pdfData.coords.y - h,
 			width, h, createPdfString( text ) );
 
 		pdfData.coords.y -= height;
 
+		ret.append( { pdfData.page, pdfData.coords.y, height } );
+
 		pdfData.painter->FinishPage();
 
 		createPage( pdfData );
 
-		drawHeading( pdfData, renderOpts, item, doc );
+		ret.append( drawHeading( pdfData, renderOpts, item, doc, offset ) );
+
+		return ret;
 	}
 }
 
-void
+QVector< QPair< QRectF, PdfPage* > >
 PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
-	drawString( pdfData, renderOpts, item->text(),
+	return drawString( pdfData, renderOpts, item->text(),
 		item->opts() & MD::TextOption::BoldText,
 		item->opts() & MD::TextOption::ItalicText,
 		item->opts() & MD::TextOption::StrikethroughText,
@@ -376,7 +387,7 @@ QVector< QPair< QRectF, PdfPage* > > normalizeRects(
 	return ret;
 }
 
-void
+QVector< QPair< QRectF, PdfPage* > >
 PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
@@ -417,6 +428,8 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			annot->SetFlags( ePdfAnnotationFlags_NoZoom );
 		}
 	}
+
+	return rects;
 }
 
 QVector< QPair< QRectF, PdfPage* > >
@@ -527,18 +540,20 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	return ret;
 }
 
-void
+QVector< QPair< QRectF, PdfPage* > >
 PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
+	QVector< QPair< QRectF, PdfPage* > > ret;
+
 	Q_UNUSED( doc )
 
 	{
 		QMutexLocker lock( &m_mutex );
 
 		if( m_terminate )
-			return;
+			return ret;
 	}
 
 	auto * font = createFont( renderOpts.m_codeFont, false, false,
@@ -555,6 +570,10 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 	{
 		pdfData.painter->SetFont( textFont );
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+
+		ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+			spaceWidth, lineHeight ), pdfData.page ) );
+
 		pdfData.coords.x += spaceWidth;
 	}
 
@@ -568,7 +587,7 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 			QMutexLocker lock( &m_mutex );
 
 			if( m_terminate )
-				return;
+				return ret;
 		}
 
 		auto str = createPdfString( *it );
@@ -591,6 +610,10 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 			pdfData.painter->Restore();
 
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
+
+			ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+				length, lineHeight ), pdfData.page ) );
+
 			pdfData.coords.x += length;
 
 			if( it + 1 != last )
@@ -615,6 +638,10 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 						pdfData.painter->Restore();
 
 						pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
+
+						ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+							spaceWidth, lineHeight ), pdfData.page ) );
+
 						pdfData.coords.x += spaceWidth;
 					}
 				}
@@ -662,12 +689,17 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 
 				pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 
+				ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
+					length, lineHeight ), pdfData.page ) );
+
 				moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
 
 				rY = pdfData.coords.y + font->GetFontMetrics()->GetDescent();
 			}
 		}
 	}
+
+	return ret;
 }
 
 void
@@ -685,15 +717,49 @@ PdfRenderer::moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset
 	}
 }
 
-void
+QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > & rects,
+	double pageHeight )
+{
+	const QVector< QPair< QRectF, PdfPage* > > tmp = normalizeRects( rects );
+
+	struct AuxData{
+		double minY = 0.0;
+		double maxY = 0.0;
+	}; // struct AuxData
+
+	QMap< PdfPage*, AuxData > map;
+
+	for( const auto & r : tmp )
+	{
+		if( !map.contains( r.second ) )
+			map[ r.second ] = { pageHeight, 0.0 };
+
+		if( r.first.y() < map[ r.second ].minY )
+			map[ r.second ].minY = r.first.y();
+
+		if( r.first.height() + r.first.y() > map[ r.second ].maxY )
+			map[ r.second ].maxY = r.first.height() + r.first.y();
+	}
+
+	QVector< WhereDrawn > ret;
+
+	for( auto it = map.cbegin(), last = map.cend(); it != last; ++it )
+		ret.append( { it.key(), it.value().minY, it.value().maxY - it.value().minY } );
+
+	return ret;
+}
+
+QVector< WhereDrawn >
 PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset )
 {
+	QVector< QPair< QRectF, PdfPage* > > rects;
+
 	{
 		QMutexLocker lock( &m_mutex );
 
 		if( m_terminate )
-			return;
+			return QVector< WhereDrawn > ();
 	}
 
 	emit status( tr( "Drawing paragraph." ) );
@@ -723,29 +789,29 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			QMutexLocker lock( &m_mutex );
 
 			if( m_terminate )
-				return;
+				return QVector< WhereDrawn > ();
 		}
 
 		switch( (*it)->type() )
 		{
 			case MD::ItemType::Text :
-				drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
-					doc, newLine, offset, it == item->items().begin() );
+				rects.append( drawText( pdfData, renderOpts, static_cast< MD::Text* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() ) );
 				break;
 
 			case MD::ItemType::Code :
-				drawInlinedCode( pdfData, renderOpts, static_cast< MD::Code* > ( it->data() ),
-					doc, newLine, offset, it == item->items().begin() );
+				rects.append( drawInlinedCode( pdfData, renderOpts, static_cast< MD::Code* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() ) );
 				break;
 
 			case MD::ItemType::Link :
-				drawLink( pdfData, renderOpts, static_cast< MD::Link* > ( it->data() ),
-					doc, newLine, offset, it == item->items().begin() );
+				rects.append(drawLink( pdfData, renderOpts, static_cast< MD::Link* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() ) );
 				break;
 
 			case MD::ItemType::Image :
-				drawImage( pdfData, renderOpts, static_cast< MD::Image* > ( it->data() ),
-					doc, newLine, offset, it == item->items().begin() );
+				rects.append( drawImage( pdfData, renderOpts, static_cast< MD::Image* > ( it->data() ),
+					doc, newLine, offset, it == item->items().begin() ) );
 				break;
 
 			case MD::ItemType::LineBreak :
@@ -756,6 +822,8 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				break;
 		}
 	}
+
+	return toWhereDrawn( rects, pdfData.coords.pageHeight );
 }
 
 QPair< QRectF, PdfPage* >
@@ -922,7 +990,7 @@ PdfRenderer::loadImage( MD::Image * item )
 			tr( "Hmm, I don't know how to load this image: %1" ).arg( item->url() ) );
 }
 
-void
+QVector< WhereDrawn >
 PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Code * item, QSharedPointer< MD::Document > doc, double offset )
 {
@@ -949,6 +1017,8 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	int i = 0;
 
+	QVector< WhereDrawn > ret;
+
 	while( i < lines.size() )
 	{
 		auto y = pdfData.coords.y;
@@ -973,6 +1043,8 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 				 h + lineHeight );
 			pdfData.painter->Fill();
 			pdfData.painter->Restore();
+
+			ret.append( { pdfData.page, y, h + lineHeight } );
 		}
 
 		for( ; i < j; ++i )
@@ -992,4 +1064,6 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 
 	pdfData.coords.y -= lineHeight;
+
+	return ret;
 }

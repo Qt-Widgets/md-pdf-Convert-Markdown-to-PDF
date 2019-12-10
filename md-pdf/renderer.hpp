@@ -107,6 +107,12 @@ struct PdfAuxData {
 	CoordsPageAttribs coords;
 }; // struct PdfAuxData;
 
+struct WhereDrawn {
+	PdfPage * page = nullptr;
+	double y = 0.0;
+	double height = 0.0;
+}; // struct WhereDrawn
+
 
 //
 // PdfRenderer
@@ -139,31 +145,34 @@ private:
 	void createPage( PdfAuxData & pdfData );
 	PdfString createPdfString( const QString & text );
 	QString createQString( const PdfString & str );
-	void drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::Heading * item, QSharedPointer< MD::Document > doc );
-	void drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
-		bool firstInParagraph = false );
+
 	void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
 		double yOffsetMultiplier = 1.0 );
-	void drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	QImage loadImage( MD::Image * item );
+
+	QVector< WhereDrawn > drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Heading * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+	QVector< WhereDrawn > drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
-	void drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	QVector< WhereDrawn > drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Code * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+
+	QVector< QPair< QRectF, PdfPage* > > drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
+		bool firstInParagraph = false );
+	QVector< QPair< QRectF, PdfPage* > > drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
 	QVector< QPair< QRectF, PdfPage* > > drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		const QString & str, bool bold, bool italic, bool strikethrough,
 		QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 		bool firstInParagraph );
-	void drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	QVector< QPair< QRectF, PdfPage* > > drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
 	QPair< QRectF, PdfPage* > drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
-	QImage loadImage( MD::Image * item );
-	void drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::Code * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
 
 private:
 	QString m_fileName;
