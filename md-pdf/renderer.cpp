@@ -87,7 +87,7 @@ PdfRenderer::renderImpl()
 
 		emit progress( 0 );
 
-		PdfStreamedDocument document( m_fileName.toLocal8Bit().data() );
+		PdfMemDocument document;
 
 		PdfPainter painter;
 
@@ -128,8 +128,13 @@ PdfRenderer::renderImpl()
 							m_doc );
 						break;
 
-					case MD::ItemType::List :
 					case MD::ItemType::Blockquote :
+						drawBlockquote( pdfData, m_opts,
+							static_cast< MD::Blockquote* > ( i.data() ),
+							m_doc );
+						break;
+
+					case MD::ItemType::List :
 					case MD::ItemType::Table :
 						break;
 
@@ -154,7 +159,7 @@ PdfRenderer::renderImpl()
 
 			painter.FinishPage();
 
-			document.Close();
+			document.Write( m_fileName.toLocal8Bit().data() );
 
 			emit done( m_terminate );
 		}
@@ -162,7 +167,7 @@ PdfRenderer::renderImpl()
 		{
 			try {
 				painter.FinishPage();
-				document.Close();
+				document.Write( m_fileName.toLocal8Bit().data() );
 			}
 			catch( ... )
 			{
@@ -174,7 +179,7 @@ PdfRenderer::renderImpl()
 		{
 			try {
 				painter.FinishPage();
-				document.Close();
+				document.Write( m_fileName.toLocal8Bit().data() );
 			}
 			catch( ... )
 			{
@@ -203,7 +208,7 @@ PdfRenderer::clean()
 
 PdfFont *
 PdfRenderer::createFont( const QString & name, bool bold, bool italic, float size,
-	PdfStreamedDocument * doc )
+	PdfMemDocument * doc )
 {
 	auto * font = doc->CreateFont( name.toLocal8Bit().data(), bold, italic , false,
 		PdfEncodingFactory::GlobalIdentityEncodingInstance(),
@@ -233,6 +238,8 @@ PdfRenderer::createPage( PdfAuxData & pdfData )
 		pdfData.page->GetPageSize().GetWidth(),
 		pdfData.page->GetPageSize().GetHeight(),
 		c_margin, pdfData.page->GetPageSize().GetHeight() - c_margin };
+
+	++pdfData.currentPageIdx;
 }
 
 PdfString
@@ -290,7 +297,7 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 		pdfData.coords.y -= height;
 
-		ret.append( { pdfData.page, pdfData.coords.y, height } );
+		ret.append( { pdfData.currentPageIdx, pdfData.coords.y, height } );
 
 		return ret;
 	}
@@ -333,7 +340,7 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 		pdfData.coords.y -= height;
 
-		ret.append( { pdfData.page, pdfData.coords.y, height } );
+		ret.append( { pdfData.currentPageIdx, pdfData.coords.y, height } );
 
 		pdfData.painter->FinishPage();
 
@@ -345,7 +352,7 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 }
 
-QVector< QPair< QRectF, PdfPage* > >
+QVector< QPair< QRectF, int > >
 PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
@@ -359,14 +366,14 @@ PdfRenderer::drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 namespace /* anonymous */ {
 
-QVector< QPair< QRectF, PdfPage* > >
-normalizeRects( const QVector< QPair< QRectF, PdfPage* > > & rects )
+QVector< QPair< QRectF, int > >
+normalizeRects( const QVector< QPair< QRectF, int > > & rects )
 {
-	QVector< QPair< QRectF, PdfPage* > > ret;
+	QVector< QPair< QRectF, int > > ret;
 
 	if( !rects.isEmpty() )
 	{
-		QPair< QRectF, PdfPage* > to( rects.first() );
+		QPair< QRectF, int > to( rects.first() );
 
 		auto it = rects.cbegin();
 		++it;
@@ -391,12 +398,12 @@ normalizeRects( const QVector< QPair< QRectF, PdfPage* > > & rects )
 
 } /* namespace anonymous */
 
-QVector< QPair< QRectF, PdfPage* > >
+QVector< QPair< QRectF, int > >
 PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
-	QVector< QPair< QRectF, PdfPage* > > rects;
+	QVector< QPair< QRectF, int > > rects;
 
 	if( item->img()->isEmpty() )
 	{
@@ -421,7 +428,7 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	{
 		for( const auto & r : qAsConst( rects ) )
 		{
-			auto * annot = r.second->CreateAnnotation( ePdfAnnotation_Link,
+			auto * annot = pdfData.doc->GetPage( r.second )->CreateAnnotation( ePdfAnnotation_Link,
 				PdfRect( r.first.x(), r.first.y(), r.first.width(), r.first.height() ) );
 			annot->SetBorderStyle( 0.0, 0.0, 0.0 );
 
@@ -436,7 +443,7 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	return rects;
 }
 
-QVector< QPair< QRectF, PdfPage* > >
+QVector< QPair< QRectF, int > >
 PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	const QString & str, bool bold, bool italic, bool strikethrough,
 	QSharedPointer< MD::Document > doc, bool & newLine, double offset,
@@ -444,7 +451,7 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	Q_UNUSED( doc )
 
-	QVector< QPair< QRectF, PdfPage * > > ret;
+	QVector< QPair< QRectF, int > > ret;
 
 	{
 		QMutexLocker lock( &m_mutex );
@@ -498,7 +505,7 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 			ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-				length, lineHeight ), pdfData.page ) );
+				length, lineHeight ), pdfData.currentPageIdx ) );
 			pdfData.coords.x += length;
 
 			if( it + 1 != last )
@@ -509,7 +516,7 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 					pdfData.coords.margins.right )
 				{
 					ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-						spaceWidth, lineHeight ), pdfData.page ) );
+						spaceWidth, lineHeight ), pdfData.currentPageIdx ) );
 					pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 					pdfData.coords.x += spaceWidth;
 				}
@@ -534,7 +541,8 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 				pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 				ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-					font->GetFontMetrics()->StringWidth( str ), lineHeight ), pdfData.page ) );
+						font->GetFontMetrics()->StringWidth( str ), lineHeight ),
+					pdfData.currentPageIdx ) );
 
 				moveToNewLine( pdfData, offset, lineHeight, 1.0 );
 			}
@@ -544,12 +552,12 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	return ret;
 }
 
-QVector< QPair< QRectF, PdfPage* > >
+QVector< QPair< QRectF, int > >
 PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
 {
-	QVector< QPair< QRectF, PdfPage* > > ret;
+	QVector< QPair< QRectF, int > > ret;
 
 	Q_UNUSED( doc )
 
@@ -576,7 +584,7 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 		pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 
 		ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-			spaceWidth, lineHeight ), pdfData.page ) );
+			spaceWidth, lineHeight ), pdfData.currentPageIdx ) );
 
 		pdfData.coords.x += spaceWidth;
 	}
@@ -616,7 +624,7 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 			pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 
 			ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-				length, lineHeight ), pdfData.page ) );
+				length, lineHeight ), pdfData.currentPageIdx ) );
 
 			pdfData.coords.x += length;
 
@@ -644,7 +652,7 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 						pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, " " );
 
 						ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-							spaceWidth, lineHeight ), pdfData.page ) );
+							spaceWidth, lineHeight ), pdfData.currentPageIdx ) );
 
 						pdfData.coords.x += spaceWidth;
 					}
@@ -694,7 +702,7 @@ PdfRenderer::drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpt
 				pdfData.painter->DrawText( pdfData.coords.x, pdfData.coords.y, str );
 
 				ret.append( qMakePair( QRectF( pdfData.coords.x, pdfData.coords.y,
-					length, lineHeight ), pdfData.page ) );
+					length, lineHeight ), pdfData.currentPageIdx ) );
 
 				moveToNewLine( pdfData, offset, textFont->GetFontMetrics()->GetLineSpacing(), 1.0 );
 
@@ -723,7 +731,7 @@ PdfRenderer::moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset
 
 namespace /* anonymous */ {
 
-QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > & rects,
+QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, int > > & rects,
 	double pageHeight )
 {
 	struct AuxData{
@@ -731,7 +739,7 @@ QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, PdfPage* > > &
 		double maxY = 0.0;
 	}; // struct AuxData
 
-	QMap< PdfPage*, AuxData > map;
+	QMap< int, AuxData > map;
 
 	for( const auto & r : rects )
 	{
@@ -759,7 +767,7 @@ QVector< WhereDrawn >
 PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset )
 {
-	QVector< QPair< QRectF, PdfPage* > > rects;
+	QVector< QPair< QRectF, int > > rects;
 
 	{
 		QMutexLocker lock( &m_mutex );
@@ -832,7 +840,7 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	return toWhereDrawn( normalizeRects( rects ), pdfData.coords.pageHeight );
 }
 
-QPair< QRectF, PdfPage* >
+QPair< QRectF, int >
 PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
 	bool firstInParagraph )
@@ -912,11 +920,9 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		QRectF r( pdfData.coords.x + x, pdfData.coords.y,
 			pdfImg.GetWidth() * scale, pdfImg.GetHeight() * scale );
 
-		auto * page = pdfData.page;
-
 		moveToNewLine( pdfData, offset, lineHeight, 1.0 );
 
-		return qMakePair( r, page );
+		return qMakePair( r, pdfData.currentPageIdx );
 	}
 	else
 		throw PdfRendererError( tr( "Unable to load image: %1" ).arg( item->url() ) );
@@ -1050,7 +1056,7 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			pdfData.painter->Fill();
 			pdfData.painter->Restore();
 
-			ret.append( { pdfData.page, y, h + lineHeight } );
+			ret.append( { pdfData.currentPageIdx, y, h + lineHeight } );
 		}
 
 		for( ; i < j; ++i )
@@ -1070,6 +1076,92 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	}
 
 	pdfData.coords.y -= lineHeight;
+
+	return ret;
+}
+
+QVector< WhereDrawn >
+PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Blockquote * item, QSharedPointer< MD::Document > doc, double offset )
+{
+	QVector< WhereDrawn > ret;
+
+	for( auto it = item->items().cbegin(), last = item->items().cend(); it != last; ++it )
+	{
+		switch( (*it)->type() )
+		{
+			case MD::ItemType::Heading :
+				ret.append( drawHeading( pdfData, renderOpts,
+					static_cast< MD::Heading* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
+				break;
+
+			case MD::ItemType::Paragraph :
+				ret.append( drawParagraph( pdfData, renderOpts,
+					static_cast< MD::Paragraph* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
+				break;
+
+			case MD::ItemType::Code :
+				ret.append( drawCode( pdfData, renderOpts,
+					static_cast< MD::Code* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
+				break;
+
+			case MD::ItemType::Blockquote :
+				ret.append( drawBlockquote( pdfData, renderOpts,
+					static_cast< MD::Blockquote* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
+				break;
+
+			case MD::ItemType::List :
+			case MD::ItemType::Table :
+				break;
+
+			default :
+				break;
+		}
+	}
+
+	struct AuxData {
+		double y = 0.0;
+		double height = 0.0;
+	}; // struct AuxData
+
+	QMap< int, AuxData > map;
+
+	for( const auto & where : qAsConst( ret ) )
+	{
+		if( !map.contains( where.pageIdx ) )
+			map.insert( where.pageIdx, { where.y, where.height } );
+
+		if( map[ where.pageIdx ].y > where.y )
+		{
+			map[ where.pageIdx ].height = map[ where.pageIdx ].y +
+				map[ where.pageIdx ].height - where.y;
+			map[ where.pageIdx ].y = where.y;
+		}
+	}
+
+	pdfData.painter->FinishPage();
+
+	for( auto it = map.cbegin(), last = map.cend(); it != last; ++it )
+	{
+		pdfData.painter->SetPage( pdfData.doc->GetPage( it.key() ) );
+		pdfData.painter->Save();
+//		pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
+//			renderOpts.m_codeBackground.greenF(),
+//			renderOpts.m_codeBackground.blueF() );
+		pdfData.painter->SetColor( renderOpts.m_borderColor.redF(),
+			renderOpts.m_borderColor.greenF(),
+			renderOpts.m_borderColor.blueF() );
+		pdfData.painter->Rectangle( pdfData.coords.margins.left + offset, it.value().y,
+			c_blockquoteMarkWidth, it.value().height );
+		pdfData.painter->Fill();
+		pdfData.painter->Restore();
+	}
+
+	pdfData.painter->SetPage( pdfData.doc->GetPage( pdfData.currentPageIdx ) );
 
 	return ret;
 }
