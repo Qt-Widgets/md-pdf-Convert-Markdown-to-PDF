@@ -261,8 +261,10 @@ PdfRenderer::createFont( const QString & name, bool bold, bool italic, float siz
 		PdfFontCache::eFontCreationFlags_None );
 
 	if( !font )
-		throw PdfRendererError( tr( "Unable to create font: %1. Please choose another one." )
-			.arg( name ) );
+		throw PdfRendererError( tr( "Unable to create font: %1. Please choose another one.\n\n"
+			"This application uses PoDoFo C++ library to create PDF. And not all fonts supported by Qt "
+			"are supported by PoDoFo. I'm sorry for the inconvenience." )
+				.arg( name ) );
 
 	font->SetFontSize( size );
 
@@ -276,7 +278,9 @@ PdfRenderer::createPage( PdfAuxData & pdfData )
 		PdfPage::CreateStandardPageSize( ePdfPageSize_A4 ) );
 
 	if( !pdfData.page )
-		throw PdfRendererError( QLatin1String( "Oops, can't create empty page in PDF." ) );
+		throw PdfRendererError( QLatin1String( "Oops, can't create empty page in PDF.\n\n"
+			"This is very strange, it should not appear ever, but it is. "
+			"I'm sorry for the inconvenience." ) );
 
 	pdfData.painter->SetPage( pdfData.page );
 
@@ -994,7 +998,10 @@ PdfRenderer::drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		return qMakePair( r, pdfData.currentPageIdx );
 	}
 	else
-		throw PdfRendererError( tr( "Unable to load image: %1" ).arg( item->url() ) );
+		throw PdfRendererError( tr( "Unable to load image: %1.\n\n"
+			"If this image is in Web, please be sure you are connected to the Internet. I'm "
+			"sorry for the inconvenience." )
+				.arg( item->url() ) );
 }
 
 //
@@ -1068,7 +1075,9 @@ PdfRenderer::loadImage( MD::Image * item )
 	}
 	else
 		throw PdfRendererError(
-			tr( "Hmm, I don't know how to load this image: %1" ).arg( item->url() ) );
+			tr( "Hmm, I don't know how to load this image: %1.\n\n"
+				"This image is not a local existing file, and not in the Web. Check your Markdown." )
+					.arg( item->url() ) );
 }
 
 QVector< WhereDrawn >
