@@ -149,6 +149,13 @@ PdfRenderer::renderImpl()
 					}
 						break;
 
+					case MD::ItemType::Anchor :
+					{
+						auto * a = static_cast< MD::Anchor* > ( i.data() );
+						m_dests.insert( a->label(), PdfDestination( pdfData.page ) );
+					}
+						break;
+
 					default :
 						break;
 				}
@@ -158,6 +165,8 @@ PdfRenderer::renderImpl()
 			}
 
 			painter.FinishPage();
+
+			resolveLinks( pdfData );
 
 			document.Write( m_fileName.toLocal8Bit().data() );
 
@@ -203,7 +212,29 @@ PdfRenderer::renderImpl()
 void
 PdfRenderer::clean()
 {
+	m_dests.clear();
+	m_unresolvedLinks.clear();
 	PdfEncodingFactory::FreeGlobalEncodingInstances();
+}
+
+void
+PdfRenderer::resolveLinks( PdfAuxData & pdfData )
+{
+	for( auto it = m_unresolvedLinks.cbegin(), last = m_unresolvedLinks.cend(); it != last; ++it )
+	{
+		if( m_dests.contains( it.key() ) )
+		{
+			for( const auto & r : qAsConst( it.value() ) )
+			{
+				auto * page = pdfData.doc->GetPage( r.second );
+				auto * annot = page->CreateAnnotation( ePdfAnnotation_Link,
+					PdfRect( r.first.x(), r.first.y(), r.first.width(), r.first.height() ) );
+				annot->SetBorderStyle( 0.0, 0.0, 0.0 );
+				annot->SetDestination( m_dests.value( it.key(), PdfDestination( pdfData.page ) ) );
+				annot->SetFlags( ePdfAnnotationFlags_NoZoom );
+			}
+		}
+	}
 }
 
 PdfFont *
@@ -295,6 +326,12 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			pdfData.coords.y - height,
 			width, height, createPdfString( item->text() ) );
 
+		if( !item->label().isEmpty() )
+			m_dests.insert( item->label(), PdfDestination( pdfData.page,
+				PdfRect( pdfData.coords.margins.left + offset,
+					pdfData.coords.y - font->GetFontMetrics()->GetLineSpacing(),
+					width, font->GetFontMetrics()->GetLineSpacing() ) ) );
+
 		pdfData.coords.y -= height;
 
 		ret.append( { pdfData.currentPageIdx, pdfData.coords.y, height } );
@@ -337,6 +374,12 @@ PdfRenderer::drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		pdfData.painter->DrawMultiLineText( pdfData.coords.margins.left + offset,
 			pdfData.coords.y - h,
 			width, h, createPdfString( text ) );
+
+		if( !item->label().isEmpty() )
+			m_dests.insert( item->label(), PdfDestination( pdfData.page,
+				PdfRect( pdfData.coords.margins.left + offset,
+					pdfData.coords.y - font->GetFontMetrics()->GetLineSpacing(),
+					width, font->GetFontMetrics()->GetLineSpacing() ) ) );
 
 		pdfData.coords.y -= height;
 
@@ -424,6 +467,11 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		rects.append( drawImage( pdfData, renderOpts, item->img().data(), doc, newLine, offset,
 			firstInParagraph ) );
 
+	QString url = item->url();
+
+	if( doc->labeledLinks().contains( url ) )
+		url = doc->labeledLinks()[ url ]->url();
+
 	if( !QUrl( item->url() ).isRelative() )
 	{
 		for( const auto & r : qAsConst( rects ) )
@@ -439,6 +487,8 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			annot->SetFlags( ePdfAnnotationFlags_NoZoom );
 		}
 	}
+	else
+		m_unresolvedLinks.insert( item->url(), rects );
 
 	return rects;
 }
@@ -1149,9 +1199,6 @@ PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts
 	{
 		pdfData.painter->SetPage( pdfData.doc->GetPage( it.key() ) );
 		pdfData.painter->Save();
-//		pdfData.painter->SetColor( renderOpts.m_codeBackground.redF(),
-//			renderOpts.m_codeBackground.greenF(),
-//			renderOpts.m_codeBackground.blueF() );
 		pdfData.painter->SetColor( renderOpts.m_borderColor.redF(),
 			renderOpts.m_borderColor.greenF(),
 			renderOpts.m_borderColor.blueF() );

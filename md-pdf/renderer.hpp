@@ -156,6 +156,7 @@ private:
 	void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
 		double yOffsetMultiplier = 1.0 );
 	QImage loadImage( MD::Image * item );
+	void resolveLinks( PdfAuxData & pdfData );
 
 	QVector< WhereDrawn > drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Heading * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
@@ -189,6 +190,8 @@ private:
 	RenderOpts m_opts;
 	QMutex m_mutex;
 	bool m_terminate;
+	QMap< QString, PdfDestination > m_dests;
+	QMultiMap< QString, QVector< QPair< QRectF, int > > > m_unresolvedLinks;
 }; // class Renderer
 
 

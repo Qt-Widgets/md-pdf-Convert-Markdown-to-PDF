@@ -829,7 +829,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 					{
 						if( fileExists( url, workingPath ) )
 						{
-							url = workingPath + url;
+							url = QFileInfo( workingPath + url ).absoluteFilePath();
 
 							linksToParse.append( url );
 						}
@@ -869,7 +869,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 								{
 									if( fileExists( url, workingPath ) )
 									{
-										url = workingPath + url;
+										url = QFileInfo( workingPath + url ).absoluteFilePath();
 
 										linksToParse.append( url );
 									}
