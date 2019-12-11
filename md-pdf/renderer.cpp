@@ -1409,11 +1409,160 @@ PdfRenderer::maxListNumberWidth( MD::List * list ) const
 	return ( counter / 10 + 1 );
 }
 
+QVector< QVector< PdfRenderer::CellData > >
+PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Table * item, QSharedPointer< MD::Document > doc )
+{
+	const auto columnsCount = item->columnsCount();
+
+	QVector< QVector< CellData > > auxTable;
+	auxTable.resize( columnsCount );
+
+	for( auto rit = item->rows().cbegin(), rlast = item->rows().cend(); rit != rlast; ++rit )
+	{
+		int i = 0;
+
+		for( auto cit = (*rit)->cells().cbegin(), clast = (*rit)->cells().cend(); cit != clast; ++cit )
+		{
+			if( i == columnsCount )
+				break;
+
+			CellData data;
+
+			for( auto it = (*cit)->items().cbegin(), last = (*cit)->items().cend(); it != last; ++it )
+			{
+				switch( (*it)->type() )
+				{
+					case MD::ItemType::Text :
+					{
+						auto * t = static_cast< MD::Text* > ( it->data() );
+
+						auto * font = createFont( renderOpts.m_textFont,
+							t->opts() & MD::TextOption::BoldText,
+							t->opts() & MD::TextOption::ItalicText,
+							renderOpts.m_textFontSize, pdfData.doc );
+
+						if( t->opts() & MD::TextOption::StrikethroughText )
+							font->SetStrikeOut( true );
+
+						const auto words = t->text().split( QLatin1Char( ' ' ),
+							QString::SkipEmptyParts );
+
+						for( const auto & w : words )
+						{
+							CellItem item;
+							item.word = w;
+							item.font = font;
+
+							data.items.append( item );
+						}
+					}
+						break;
+
+					case MD::ItemType::Code :
+					{
+						auto * c = static_cast< MD::Code* > ( it->data() );
+
+						auto * font = createFont( renderOpts.m_codeFont, false, false,
+							renderOpts.m_codeFontSize, pdfData.doc );
+
+						const auto words = c->text().split( QLatin1Char( ' ' ),
+							QString::SkipEmptyParts );
+
+						for( const auto & w : words )
+						{
+							CellItem item;
+							item.word = w;
+							item.font = font;
+							item.background = renderOpts.m_codeBackground;
+
+							data.items.append( item );
+						}
+					}
+						break;
+
+					case MD::ItemType::Link :
+					{
+						auto * l = static_cast< MD::Link* > ( it->data() );
+
+						auto * font = createFont( renderOpts.m_textFont,
+							l->textOptions() & MD::TextOption::BoldText,
+							l->textOptions() & MD::TextOption::ItalicText,
+							renderOpts.m_textFontSize, pdfData.doc );
+
+						if( l->textOptions() & MD::TextOption::StrikethroughText )
+							font->SetStrikeOut( true );
+
+						QString url = l->url();
+
+						if( doc->labeledLinks().contains( url ) )
+							url = doc->labeledLinks()[ url ]->url();
+
+						if( !l->img()->isEmpty() )
+						{
+							CellItem item;
+							item.image = loadImage( l->img().data() );
+							item.url = url;
+
+							data.items.append( item );
+						}
+						else if( !l->text().isEmpty() )
+						{
+							const auto words = l->text().split( QLatin1Char( ' ' ),
+								QString::SkipEmptyParts );
+
+							for( const auto & w : words )
+							{
+								CellItem item;
+								item.word = w;
+								item.font = font;
+								item.url = url;
+
+								data.items.append( item );
+							}
+						}
+					}
+						break;
+
+					case MD::ItemType::Image :
+					{
+						auto * i = static_cast< MD::Image* > ( it->data() );
+
+						CellItem item;
+						item.image = loadImage( i );
+
+						data.items.append( item );
+					}
+						break;
+
+					default :
+						break;
+				}
+			}
+
+			auxTable[ i ].append( data );
+
+			++i;
+		}
+
+		for( ; i < columnsCount; ++i )
+			auxTable[ i ].append( CellData() );
+	}
+
+	return auxTable;
+}
+
 QVector< WhereDrawn >
 PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Table * item, QSharedPointer< MD::Document > doc, double offset )
 {
 	QVector< WhereDrawn > ret;
+
+	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
+		pdfData.doc );
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	auto auxTable = createAuxTable( pdfData, renderOpts, item, doc );
 
 	return ret;
 }

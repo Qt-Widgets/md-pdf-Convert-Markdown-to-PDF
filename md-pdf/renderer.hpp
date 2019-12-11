@@ -86,6 +86,7 @@ static const double c_margin = 25.0;
 static const double c_beforeHeading = 15.0;
 static const double c_blockquoteBaseOffset = 10.0;
 static const double c_blockquoteMarkWidth = 3.0;
+static const double c_tableMargin = 2.0;
 
 struct PageMargins {
 	double left = c_margin;
@@ -201,6 +202,26 @@ private:
 	QPair< QRectF, int > drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
 		bool firstInParagraph = false );
+
+	struct CellItem {
+		QString word;
+		QImage image;
+		QString url;
+		QColor color;
+		QColor background;
+		PdfFont * font = nullptr;
+	}; // struct CellItem
+
+	struct CellData {
+		double width = 0.0;
+		double height = 0.0;
+		MD::Table::Alignment alignment;
+		QVector< CellItem > items;
+	}; //  struct CellData
+
+	QVector< QVector< CellData > >
+	createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Table * item, QSharedPointer< MD::Document > doc );
 
 private:
 	QString m_fileName;

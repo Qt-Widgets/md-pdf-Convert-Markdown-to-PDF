@@ -668,46 +668,42 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 	auto parseImg = [&]( int i, const QString & line, bool * ok = nullptr,
 		bool addLex = true ) -> int
 	{
-		const int start = i;
 		i += 2;
 		const int length = line.length();
 
 		QString t = readLinkText( i, line );
 
-		if( !t.isEmpty() )
+		i = skipSpaces( i, line );
+
+		if( i < length && line[ i ] == QLatin1Char( '(' ) )
 		{
-			i = skipSpaces( i, line );
+			QString lnk = readLnk( i, line );
 
-			if( i < length && line[ i ] == QLatin1Char( '(' ) )
+			if( !lnk.isEmpty() && i < length )
 			{
-				QString lnk = readLnk( i, line );
+				i = skipSpaces( i, line );
 
-				if( !lnk.isEmpty() && i < length )
+				if( i < length )
 				{
-					i = skipSpaces( i, line );
-
-					if( i < length )
+					if( skipLnkCaption( i, line ) )
 					{
-						if( skipLnkCaption( i, line ) )
-						{
-							QSharedPointer< Image > img( new Image() );
-							img->setText( t.simplified() );
+						QSharedPointer< Image > img( new Image() );
+						img->setText( t.simplified() );
 
-							if( !QUrl( lnk ).isRelative() )
-								img->setUrl( lnk );
-							else
-								img->setUrl( fileExists( lnk, workingPath ) ? workingPath + lnk : lnk );
+						if( !QUrl( lnk ).isRelative() )
+							img->setUrl( lnk );
+						else
+							img->setUrl( fileExists( lnk, workingPath ) ? workingPath + lnk : lnk );
 
-							data.img.append( img );
+						data.img.append( img );
 
-							if( addLex )
-								data.lexems.append( Lex::Image );
+						if( addLex )
+							data.lexems.append( Lex::Image );
 
-							if( ok )
-								*ok = true;
+						if( ok )
+							*ok = true;
 
-							return i;
-						}
+						return i;
 					}
 				}
 			}
@@ -803,16 +799,7 @@ Parser::parseFormattedTextLinksImages( QStringList & fr, QSharedPointer< Block >
 				}
 			}
 			else
-			{
 				lnkText = readLinkText( i, line ).simplified();
-
-				if( lnkText.isEmpty() )
-				{
-					text.append( line.mid( startPos, i - startPos ) );
-
-					return i;
-				}
-			}
 		}
 
 		i = skipSpaces( i, line );
