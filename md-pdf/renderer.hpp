@@ -157,15 +157,33 @@ private:
 		double yOffsetMultiplier = 1.0 );
 	QImage loadImage( MD::Image * item );
 	void resolveLinks( PdfAuxData & pdfData );
+	int maxListNumberWidth( MD::List * list ) const;
 
 	QVector< WhereDrawn > drawHeading( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Heading * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
 	QVector< WhereDrawn > drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+		MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset = 0.0,
+		bool withNewLine = true );
 	QVector< WhereDrawn > drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Code * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
 	QVector< WhereDrawn > drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Blockquote * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+	QVector< WhereDrawn > drawList( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::List * item, QSharedPointer< MD::Document > doc, int bulletWidth,
+		double offset = 0.0 );
+	QVector< WhereDrawn > drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::Table * item, QSharedPointer< MD::Document > doc, double offset = 0.0 );
+
+	enum class ListItemType
+	{
+		Unknown,
+		Ordered,
+		Unordered
+	}; // enum class ListItemType
+
+	QVector< WhereDrawn > drawListItem( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+		MD::ListItem * item, QSharedPointer< MD::Document > doc, bool & newList, int & idx,
+		ListItemType & prevListItemType, int bulletWidth, double offset = 0.0 );
 
 	QVector< QPair< QRectF, int > > drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,

@@ -135,7 +135,22 @@ PdfRenderer::renderImpl()
 						break;
 
 					case MD::ItemType::List :
+					{
+						auto * list = static_cast< MD::List* > ( i.data() );
+						const auto bulletWidth = maxListNumberWidth( list );
+
+						auto * font = createFont( m_opts.m_textFont, false, false,
+							m_opts.m_textFontSize, pdfData.doc );
+						pdfData.coords.y -= font->GetFontMetrics()->GetLineSpacing();
+
+						drawList( pdfData, m_opts, list, m_doc, bulletWidth );
+					}
+						break;
+
 					case MD::ItemType::Table :
+						drawTable( pdfData, m_opts,
+							static_cast< MD::Table* > ( i.data() ),
+							m_doc );
 						break;
 
 					case MD::ItemType::PageBreak :
@@ -815,7 +830,7 @@ QVector< WhereDrawn > toWhereDrawn( const QVector< QPair< QRectF, int > > & rect
 
 QVector< WhereDrawn >
 PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset )
+	MD::Paragraph * item, QSharedPointer< MD::Document > doc, double offset, bool withNewLine )
 {
 	QVector< QPair< QRectF, int > > rects;
 
@@ -833,9 +848,13 @@ PdfRenderer::drawParagraph( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
 
-	moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
+	if( withNewLine )
+	{
+		moveToNewLine( pdfData, 0.0, lineHeight, 1.0 );
 
-	pdfData.coords.y -= lineHeight;
+		pdfData.coords.y -= lineHeight;
+	}
+
 	pdfData.coords.x = pdfData.coords.margins.left + offset;
 
 	if( pdfData.coords.y < pdfData.coords.margins.bottom )
@@ -1165,7 +1184,15 @@ PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts
 				break;
 
 			case MD::ItemType::List :
+				ret.append( drawList( pdfData, renderOpts,
+					static_cast< MD::List* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
+				break;
+
 			case MD::ItemType::Table :
+				ret.append( drawTable( pdfData, renderOpts,
+					static_cast< MD::Table* > ( it->data() ),
+					doc, offset + c_blockquoteBaseOffset ) );
 				break;
 
 			default :
@@ -1209,6 +1236,175 @@ PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts
 	}
 
 	pdfData.painter->SetPage( pdfData.doc->GetPage( pdfData.currentPageIdx ) );
+
+	return ret;
+}
+
+QVector< WhereDrawn >
+PdfRenderer::drawList( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::List * item, QSharedPointer< MD::Document > doc, int bulletWidth, double offset )
+{
+	QVector< WhereDrawn > ret;
+
+	bool newList = true;
+	int idx = 1;
+	ListItemType prevListItemType = ListItemType::Unknown;
+
+	for( auto it = item->items().cbegin(), last = item->items().cend(); it != last; ++it )
+	{
+		if( (*it)->type() == MD::ItemType::ListItem )
+			ret.append( drawListItem( pdfData, renderOpts,
+				static_cast< MD::ListItem* > ( it->data() ), doc, newList, idx,
+				prevListItemType, bulletWidth, offset ) );
+	}
+
+	return ret;
+}
+
+QVector< WhereDrawn >
+PdfRenderer::drawListItem( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::ListItem * item, QSharedPointer< MD::Document > doc, bool & newList, int & idx,
+	ListItemType & prevListItemType, int bulletWidth, double offset )
+{
+	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
+		pdfData.doc );
+	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+
+	pdfData.painter->SetFont( font );
+
+	if( pdfData.coords.y - lineHeight < pdfData.coords.margins.bottom )
+		createPage( pdfData );
+
+	pdfData.coords.y -= lineHeight;
+
+	const auto orderedListNumberWidth =
+		font->GetFontMetrics()->StringWidth( PdfString( "9" ) ) * bulletWidth +
+		font->GetFontMetrics()->StringWidth( PdfString( "." ) );
+	const auto spaceWidth = font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+	const auto unorderedMarkWidth = spaceWidth * 0.75;
+
+	if( item->listType() == MD::ListItem::Ordered )
+	{
+		if( prevListItemType == ListItemType::Unordered )
+			idx = 1;
+		else if( prevListItemType == ListItemType::Ordered )
+			++idx;
+
+		prevListItemType = ListItemType::Ordered;
+
+		const QString idxText = QString::number( idx ) + QLatin1Char( '.' );
+
+		pdfData.painter->DrawText( pdfData.coords.margins.left + offset,
+			pdfData.coords.y, createPdfString( idxText ) );
+	}
+	else
+	{
+		prevListItemType = ListItemType::Unordered;
+
+		pdfData.painter->Save();
+		pdfData.painter->SetColor( 0.0, 0.0, 0.0 );
+		const auto r = unorderedMarkWidth / 2.0;
+		pdfData.painter->Circle( pdfData.coords.margins.left + offset + r,
+			pdfData.coords.y + unorderedMarkWidth, r );
+		pdfData.painter->Fill();
+		pdfData.painter->Restore();
+	}
+
+	offset += orderedListNumberWidth + spaceWidth;
+
+	QVector< WhereDrawn > ret;
+
+	for( auto it = item->items().cbegin(), last = item->items().cend(); it != last; ++it )
+	{
+		switch( (*it)->type() )
+		{
+			case MD::ItemType::Heading :
+				ret.append( drawHeading( pdfData, renderOpts,
+					static_cast< MD::Heading* > ( it->data() ),
+					doc, offset ) );
+				break;
+
+			case MD::ItemType::Paragraph :
+				ret.append( drawParagraph( pdfData, renderOpts,
+					static_cast< MD::Paragraph* > ( it->data() ),
+					doc, offset, false ) );
+				break;
+
+			case MD::ItemType::Code :
+				ret.append( drawCode( pdfData, renderOpts,
+					static_cast< MD::Code* > ( it->data() ),
+					doc, offset ) );
+				break;
+
+			case MD::ItemType::Blockquote :
+				ret.append( drawBlockquote( pdfData, renderOpts,
+					static_cast< MD::Blockquote* > ( it->data() ),
+					doc, offset ) );
+				break;
+
+			case MD::ItemType::List :
+				ret.append( drawList( pdfData, renderOpts,
+					static_cast< MD::List* > ( it->data() ),
+					doc, bulletWidth, offset ) );
+				break;
+
+			case MD::ItemType::Table :
+				ret.append( drawTable( pdfData, renderOpts,
+					static_cast< MD::Table* > ( it->data() ),
+					doc, offset ) );
+				break;
+
+			default :
+				break;
+		}
+	}
+
+	return ret;
+}
+
+int
+PdfRenderer::maxListNumberWidth( MD::List * list ) const
+{
+	int counter = 0;
+
+	for( auto it = list->items().cbegin(), last = list->items().cend(); it != last; ++it )
+	{
+		if( (*it)->type() == MD::ItemType::ListItem )
+		{
+			auto * item = static_cast< MD::ListItem* > ( it->data() );
+
+			if( item->listType() == MD::ListItem::Ordered )
+				++counter;
+		}
+	}
+
+	for( auto it = list->items().cbegin(), last = list->items().cend(); it != last; ++it )
+	{
+		if( (*it)->type() == MD::ItemType::ListItem )
+		{
+			auto * item = static_cast< MD::ListItem* > ( it->data() );
+
+			for( auto lit = item->items().cbegin(), llast = item->items().cend(); lit != llast; ++lit )
+			{
+				if( (*lit)->type() == MD::ItemType::List )
+				{
+					auto i = maxListNumberWidth( static_cast< MD::List* > ( lit->data() ) );
+
+					if( i > counter )
+						counter = i;
+				}
+			}
+		}
+	}
+
+	return ( counter / 10 + 1 );
+}
+
+QVector< WhereDrawn >
+PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
+	MD::Table * item, QSharedPointer< MD::Document > doc, double offset )
+{
+	QVector< WhereDrawn > ret;
 
 	return ret;
 }
