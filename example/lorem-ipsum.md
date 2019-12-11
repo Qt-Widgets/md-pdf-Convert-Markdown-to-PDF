@@ -21,7 +21,7 @@ nec mattis metus erat id justo. `Suspendisse vel venenatis eros`, vel congue leo
 vestibulum tortor facilisis in. Aliquam lectus lacus, tristique at elit nec, varius volutpat mauris. Aenean ante
 ipsum, pharetra a sem ut, tempor ullamcorper elit. Cras a mi enim.
 
-# Third
+## Third
 
 ~~_Duis tempor fermentum risus vel maximus._~~ In vitae pharetra eros. Integer blandit vitae est quis eleifend. Sed a nulla
 vel ipsum dapibus semper. Suspendisse nec convallis turpis. `Vestibulum urna odio`, egestas non sagittis vel, luctus eu
