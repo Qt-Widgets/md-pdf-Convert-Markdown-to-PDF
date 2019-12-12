@@ -471,14 +471,17 @@ Parser::parseTable( QStringList & fr, QSharedPointer< Block > parent,
 			{
 				*it = it->simplified();
 
-				Table::Alignment a = Table::AlignLeft;
+				if( !it->isEmpty() )
+				{
+					Table::Alignment a = Table::AlignLeft;
 
-				if( it->endsWith( QLatin1Char( ':' ) ) && it->startsWith( QLatin1Char( ':' ) ) )
-					a = Table::AlignCenter;
-				else if( it->endsWith( QLatin1Char( ':' ) ) )
-					a = Table::AlignRight;
+					if( it->endsWith( QLatin1Char( ':' ) ) && it->startsWith( QLatin1Char( ':' ) ) )
+						a = Table::AlignCenter;
+					else if( it->endsWith( QLatin1Char( ':' ) ) )
+						a = Table::AlignRight;
 
-				table->setColumnAlignment( table->columnsCount(), a );
+					table->setColumnAlignment( table->columnsCount(), a );
+				}
 			}
 		}
 

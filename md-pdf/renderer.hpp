@@ -230,36 +230,9 @@ private:
 		MD::Table::Alignment alignment;
 		QVector< CellItem > items;
 
-		void calculateWidth( double spaceWidth )
+		void setWidth( double w )
 		{
-			double w = 0.0;
-
-			for( auto it = items.cbegin(), last = items.cend(); it != last; ++it )
-			{
-				double sw = spaceWidth;
-
-				if( it != items.cbegin() && it->font == ( it - 1 )->font )
-					sw = it->font->GetFontMetrics()->StringWidth( PdfString( " " ) );
-
-				if( it != items.cbegin() && it->image.isNull() )
-					w += sw;
-
-				if( it->image.isNull() )
-					w += it->width();
-				else
-				{
-					if( it->image.width() > width )
-						width = it->image.width();
-
-					if( w > width )
-						width = w;
-
-					w = 0.0;
-				}
-			}
-
-			if( w > width )
-				width = w;
+			width = w;
 		}
 
 		void heightToWidth( double lineHeight, double spaceWidth )

@@ -1615,41 +1615,18 @@ PdfRenderer::calculateCellsSize( PdfAuxData & pdfData, QVector< QVector< CellDat
 	QVector< double > columnWidthes;
 	columnWidthes.resize( auxTable.size() );
 
-	int i = 0;
-
-	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
-	{
-		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
-		{
-			cit->calculateWidth( spaceWidth );
-
-			if( cit->width > columnWidthes[ i ] )
-				columnWidthes[ i ] = cit->width;
-		}
-
-		++i;
-	}
-
 	const auto availableWidth = pdfData.coords.pageWidth - pdfData.coords.margins.left -
 		pdfData.coords.margins.right - offset;
 
-	const auto width = std::accumulate( columnWidthes.cbegin(), columnWidthes.cend(), 0.0 ) +
-		c_tableMargin * 2.0 * columnWidthes.size();
-
-	const auto ratio = availableWidth / width;
-
-	std::transform( columnWidthes.begin(), columnWidthes.end(), columnWidthes.begin(),
-		[&] ( double w ) -> double { w *= ratio; w -= c_tableMargin * 2.0; return w; } );
-
-	i = 0;
+	const auto width = availableWidth / auxTable.size();
 
 	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
 	{
 		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
-			cit->width = columnWidthes[ i ];
-
-		++i;
+			cit->setWidth( width - c_tableMargin * 2.0 );
 	}
+
+	int i = 0;
 
 	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
 		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
