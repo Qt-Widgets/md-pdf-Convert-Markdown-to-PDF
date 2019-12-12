@@ -230,7 +230,12 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 		"^\\s*\\|?(\\s*:?-{3,}:?\\s*\\|)*\\s*:?-{3,}:?\\s*\\|?\\s*$" ) );
 
 	if( hr.exactMatch( fr.first() ) )
+	{
 		parseHeading( fr, parent, doc, linksToParse, workingPath, fileName );
+
+		if( !fr.isEmpty() )
+			parseFragment( fr, parent, doc, linksToParse, workingPath, fileName );
+	}
 	else if( fnr.exactMatch( fr.first() ) )
 		parseFootnote( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( thr.indexIn( fr.first() ) > -1 && fr.size() > 1 && tcr.exactMatch( fr.at( 1 ) ) )
@@ -310,18 +315,13 @@ Parser::parseHeading( QStringList & fr, QSharedPointer< Block > parent,
 
 		QString label;
 
-		for( auto it = fr.begin(), last = fr.end(); it != last; ++it )
+		pos = labelRegExp.indexIn( fr.first() );
+
+		if( pos > -1 )
 		{
-			pos = labelRegExp.indexIn( *it );
+			label = fr.first().mid( pos, labelRegExp.matchedLength() );
 
-			if( pos > -1 )
-			{
-				label = it->mid( pos, labelRegExp.matchedLength() );
-
-				it->remove( pos, labelRegExp.matchedLength() );
-
-				break;
-			}
+			fr.first().remove( pos, labelRegExp.matchedLength() );
 		}
 
 		QSharedPointer< Heading > h( new Heading() );
@@ -333,7 +333,12 @@ Parser::parseHeading( QStringList & fr, QSharedPointer< Block > parent,
 
 		QSharedPointer< Paragraph > p( new Paragraph() );
 
-		parseFormattedTextLinksImages( fr, p, doc, linksToParse, workingPath, fileName );
+		QStringList tmp;
+		tmp << fr.first();
+
+		parseFormattedTextLinksImages( tmp, p, doc, linksToParse, workingPath, fileName );
+
+		fr.removeFirst();
 
 		if( !p->isEmpty() )
 		{
@@ -503,38 +508,34 @@ Parser::parseParagraph( QStringList & fr, QSharedPointer< Block > parent,
 	static const QRegExp h1r( QLatin1String( "^\\s*===*\\s*$" ) );
 	static const QRegExp h2r( QLatin1String( "^\\s*---*\\s*$" ) );
 
-	int i = 0;
-
 	auto ph = [&]( const QString & label )
 	{
-		QStringList tmp = fr.mid( 0, i );
+		QStringList tmp = fr.mid( 0, 1 );
 		tmp.first().prepend( label );
 
 		parseHeading( tmp, parent, doc, linksToParse, workingPath, fileName );
 
-		for( int idx = 0; idx <= i; ++idx )
+		for( int idx = 0; idx < 2; ++idx )
 			fr.removeFirst();
 
 		parseParagraph( fr, parent, doc, linksToParse, workingPath, fileName );
 	};
 	\
 	// Check for alternative syntax of H1 and H2 headings.
-	for( const auto & l : qAsConst( fr ) )
+	if( fr.size() >= 2 )
 	{
-		if( h1r.exactMatch( l ) && i > 0 )
+		if( h1r.exactMatch( fr.at( 1 ) ) )
 		{
 			ph( QLatin1String( "# " ) );
 
 			return;
 		}
-		else if( h2r.exactMatch( l ) && i > 0 )
+		else if( h2r.exactMatch( fr.at( 1 ) ) )
 		{
 			ph( QLatin1String( "## " ) );
 
 			return;
 		}
-
-		++i;
 	}
 
 	QSharedPointer< Paragraph > p( new Paragraph() );

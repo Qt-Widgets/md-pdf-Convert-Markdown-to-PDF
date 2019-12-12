@@ -82,7 +82,7 @@ public:
 }; // class Renderer
 
 
-static const double c_margin = 25.0;
+static const double c_margin = 72.0 / 25.4 * 20.0;
 static const double c_beforeHeading = 15.0;
 static const double c_blockquoteBaseOffset = 10.0;
 static const double c_blockquoteMarkWidth = 3.0;
