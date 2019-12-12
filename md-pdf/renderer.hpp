@@ -183,7 +183,7 @@ private:
 	}; // enum class ListItemType
 
 	QVector< WhereDrawn > drawListItem( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		MD::ListItem * item, QSharedPointer< MD::Document > doc, bool & newList, int & idx,
+		MD::ListItem * item, QSharedPointer< MD::Document > doc, int & idx,
 		ListItemType & prevListItemType, int bulletWidth, double offset = 0.0 );
 
 	QVector< QPair< QRectF, int > > drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
@@ -325,6 +325,9 @@ private:
 		MD::Table * item, QSharedPointer< MD::Document > doc );
 	void calculateCellsSize( PdfAuxData & pdfData, QVector< QVector< CellData > > & auxTable,
 		double spaceWidth, double offset, double lineHeight );
+	QVector< WhereDrawn > drawTableRow( QVector< QVector< CellData > > & table, int row,
+		PdfAuxData & pdfData, double offset, double lineHeight,
+		const RenderOpts & renderOpts );
 
 private:
 	QString m_fileName;

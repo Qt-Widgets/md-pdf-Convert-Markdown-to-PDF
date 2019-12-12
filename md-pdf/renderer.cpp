@@ -1086,6 +1086,8 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	Q_UNUSED( doc )
 
+	emit status( tr( "Drawing code." ) );
+
 	auto * textFont = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
 		pdfData.doc );
 	const auto textLHeight = textFont->GetFontMetrics()->GetLineSpacing();
@@ -1108,6 +1110,13 @@ PdfRenderer::drawCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	int i = 0;
 
 	QVector< WhereDrawn > ret;
+
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return ret;
+	}
 
 	while( i < lines.size() )
 	{
@@ -1164,8 +1173,17 @@ PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts
 {
 	QVector< WhereDrawn > ret;
 
+	emit status( tr( "Drawing blockquote." ) );
+
 	for( auto it = item->items().cbegin(), last = item->items().cend(); it != last; ++it )
 	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return ret;
+		}
+
 		switch( (*it)->type() )
 		{
 			case MD::ItemType::Heading :
@@ -1193,9 +1211,18 @@ PdfRenderer::drawBlockquote( PdfAuxData & pdfData, const RenderOpts & renderOpts
 				break;
 
 			case MD::ItemType::List :
+			{
+				auto * list = static_cast< MD::List* > ( it->data() );
+				const auto bulletWidth = maxListNumberWidth( list );
+
+				auto * font = createFont( m_opts.m_textFont, false, false,
+					m_opts.m_textFontSize, pdfData.doc );
+				pdfData.coords.y -= font->GetFontMetrics()->GetLineSpacing();
+
 				ret.append( drawList( pdfData, renderOpts,
-					static_cast< MD::List* > ( it->data() ),
-					doc, offset + c_blockquoteBaseOffset ) );
+					list,
+					doc, bulletWidth, offset + c_blockquoteBaseOffset ) );
+			}
 				break;
 
 			case MD::ItemType::Table :
@@ -1255,7 +1282,15 @@ PdfRenderer::drawList( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	QVector< WhereDrawn > ret;
 
-	bool newList = true;
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return ret;
+	}
+
+	emit status( tr( "Drawing list." ) );
+
 	int idx = 1;
 	ListItemType prevListItemType = ListItemType::Unknown;
 
@@ -1263,7 +1298,7 @@ PdfRenderer::drawList( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	{
 		if( (*it)->type() == MD::ItemType::ListItem )
 			ret.append( drawListItem( pdfData, renderOpts,
-				static_cast< MD::ListItem* > ( it->data() ), doc, newList, idx,
+				static_cast< MD::ListItem* > ( it->data() ), doc, idx,
 				prevListItemType, bulletWidth, offset ) );
 	}
 
@@ -1272,7 +1307,7 @@ PdfRenderer::drawList( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 QVector< WhereDrawn >
 PdfRenderer::drawListItem( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-	MD::ListItem * item, QSharedPointer< MD::Document > doc, bool & newList, int & idx,
+	MD::ListItem * item, QSharedPointer< MD::Document > doc, int & idx,
 	ListItemType & prevListItemType, int bulletWidth, double offset )
 {
 	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
@@ -1325,6 +1360,13 @@ PdfRenderer::drawListItem( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 
 	for( auto it = item->items().cbegin(), last = item->items().cend(); it != last; ++it )
 	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return ret;
+		}
+
 		switch( (*it)->type() )
 		{
 			case MD::ItemType::Heading :
@@ -1428,6 +1470,7 @@ PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts
 				break;
 
 			CellData data;
+			data.alignment = item->columnAlignment( i );
 
 			for( auto it = (*cit)->items().cbegin(), last = (*cit)->items().cend(); it != last; ++it )
 			{
@@ -1530,6 +1573,9 @@ PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts
 						auto * i = static_cast< MD::Image* > ( it->data() );
 
 						CellItem item;
+
+						emit status( tr( "Loading image." ) );
+
 						item.image = loadImage( i );
 
 						data.items.append( item );
@@ -1607,6 +1653,15 @@ PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	QVector< WhereDrawn > ret;
 
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return ret;
+	}
+
+	emit status( tr( "Drawing table." ) );
+
 	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
 		pdfData.doc );
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
@@ -1615,6 +1670,252 @@ PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	auto auxTable = createAuxTable( pdfData, renderOpts, item, doc );
 
 	calculateCellsSize( pdfData, auxTable, spaceWidth, offset, lineHeight );
+
+	const auto r0h = rowHeight( auxTable, 0 );
+	const auto r1h = rowHeight( auxTable, 1 );
+
+	if( pdfData.coords.y - ( r0h + r1h + c_tableMargin * 4.0 ) < pdfData.coords.margins.bottom )
+	{
+		if( r0h + r1h + c_tableMargin * 4.0 <= pdfData.coords.pageHeight -
+			pdfData.coords.margins.top - pdfData.coords.margins.bottom )
+		{
+			createPage( pdfData );
+		}
+	}
+
+	moveToNewLine( pdfData, offset, lineHeight, 1.0 );
+
+	for( int row = 0; row < auxTable[ 0 ].size(); ++row )
+		ret.append( drawTableRow( auxTable, row, pdfData, offset, lineHeight, renderOpts ) );
+
+	return ret;
+}
+
+QVector< WhereDrawn >
+PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfAuxData & pdfData,
+	double offset, double lineHeight, const RenderOpts & renderOpts )
+{
+	QVector< WhereDrawn > ret;
+
+	{
+		QMutexLocker lock( &m_mutex );
+
+		if( m_terminate )
+			return ret;
+	}
+
+	const auto startPage = pdfData.currentPageIdx;
+	const auto startY = pdfData.coords.y;
+	auto endPage = startPage;
+	auto endY = startY;
+	bool newLine = true;
+	int currentPage = startPage;
+
+	auto newPage = [&] ()
+	{
+		if( currentPage + 1 > pdfData.currentPageIdx )
+		{
+			createPage( pdfData );
+
+			if( pdfData.currentPageIdx > endPage )
+			{
+				endPage = pdfData.currentPageIdx;
+				endY = pdfData.coords.y;
+			}
+
+			++currentPage;
+		}
+		else
+		{
+			++currentPage;
+
+			pdfData.painter->SetPage( pdfData.doc->GetPage( currentPage ) );
+		}
+
+		newLine = true;
+	};
+
+	int column = 0;
+
+	for( auto it = table.cbegin(), last = table.cend(); it != last; ++it )
+	{
+		{
+			QMutexLocker lock( &m_mutex );
+
+			if( m_terminate )
+				return ret;
+		}
+
+		pdfData.painter->SetPage( pdfData.doc->GetPage( startPage ) );
+
+		currentPage = startPage;
+
+		auto startX = pdfData.coords.margins.left + offset;
+
+		for( int i = 0; i < column; ++i )
+			startX += table[ i ][ 0 ].width + c_tableMargin * 2.0;
+
+		startX += c_tableMargin;
+
+		double x = startX;
+		double y = startY - c_tableMargin;
+
+		if( y < pdfData.coords.margins.bottom )
+		{
+			newPage();
+
+			y = pdfData.coords.pageHeight - pdfData.coords.margins.top;
+		}
+
+		bool textBefore = false;
+
+		for( auto c = it->at( row ).items.cbegin(), clast = it->at( row ).items.cend(); c != clast; ++c )
+		{
+			if( !c->image.isNull() )
+			{
+				if( textBefore )
+					y -= lineHeight;
+
+				auto ratio = it->at( 0 ).width /
+					static_cast< double > ( c->image.width() );
+
+				auto h = static_cast< double > ( c->image.height() ) * ratio;
+
+				if(  y - h < pdfData.coords.margins.bottom )
+				{
+					newPage();
+
+					y = pdfData.coords.pageHeight - pdfData.coords.margins.top;
+				}
+
+				const auto availableHeight = pdfData.coords.pageHeight - pdfData.coords.margins.top -
+					pdfData.coords.margins.bottom;
+
+				if( h > availableHeight )
+					ratio = availableHeight / static_cast< double > ( c->image.height() );
+
+				const auto w = static_cast< double > ( c->image.width() ) * ratio;
+				auto o = 0.0;
+
+				if( w < table[ column ][ 0 ].width )
+					o = ( table[ column ][ 0 ].width - w ) / 2.0;
+
+				QByteArray data;
+				QBuffer buf( &data );
+
+				c->image.save( &buf, "jpg" );
+
+				PdfImage img( pdfData.doc );
+				img.LoadFromData( reinterpret_cast< unsigned char * >( data.data() ), data.size() );
+
+				y -= static_cast< double > ( c->image.height() ) * ratio;
+
+				pdfData.painter->DrawImage( x + o, y, &img, ratio, ratio );
+
+				newLine = true;
+				textBefore = false;
+			}
+			else
+			{
+				if( newLine )
+					y -= lineHeight;
+
+				textBefore = true;
+			}
+		}
+
+		y -= c_tableMargin;
+
+		if( y < endY  && currentPage == pdfData.currentPageIdx )
+			endY = y;
+
+		++ column;
+	}
+
+	for( int i = startPage; i <= pdfData.currentPageIdx; ++i )
+	{
+		pdfData.painter->SetPage( pdfData.doc->GetPage( i ) );
+		pdfData.painter->SetColor( renderOpts.m_borderColor.redF(),
+			renderOpts.m_borderColor.greenF(),
+			renderOpts.m_borderColor.blueF() );
+
+		const auto startX = pdfData.coords.margins.left + offset;
+		auto endX = startX;
+
+		for( int c = 0; c < table.size(); ++ c )
+			endX += table.at( c ).at( 0 ).width + c_tableMargin * 2.0;
+
+		if( i == startPage )
+		{
+			pdfData.painter->DrawLine( startX, startY, endX, startY );
+
+			auto x = startX;
+			auto y = endY;
+
+			if( i == pdfData.currentPageIdx )
+			{
+				pdfData.painter->DrawLine( startX, endY, endX, endY );
+				pdfData.painter->DrawLine( x, startY, x, endY );
+			}
+			else
+			{
+				pdfData.painter->DrawLine( x, startY, x, pdfData.coords.margins.bottom );
+				y = pdfData.coords.margins.bottom;
+			}
+
+			for( int c = 0; c < table.size(); ++c )
+			{
+				x += table.at( c ).at( 0 ).width + c_tableMargin * 2.0;
+
+				pdfData.painter->DrawLine( x, startY, x, y );
+			}
+
+			ret.append( { i, ( i < pdfData.currentPageIdx ? pdfData.coords.margins.bottom : endY ),
+				( i < pdfData.currentPageIdx ? startY - pdfData.coords.margins.bottom : startY - endY  ) } );
+		}
+		else if( i < pdfData.currentPageIdx )
+		{
+			auto x = startX;
+			auto y = pdfData.coords.margins.bottom;
+			auto sy = pdfData.coords.pageHeight - pdfData.coords.margins.top;
+
+			pdfData.painter->DrawLine( x, sy, x, y );
+
+			for( int c = 0; c < table.size(); ++c )
+			{
+				x += table.at( c ).at( 0 ).width + c_tableMargin * 2.0;
+
+				pdfData.painter->DrawLine( x, sy, x, y );
+			}
+
+			ret.append( { i, pdfData.coords.margins.bottom,
+				pdfData.coords.pageHeight - pdfData.coords.margins.top -
+					pdfData.coords.margins.bottom } );
+		}
+		else
+		{
+			auto x = startX;
+			auto y = endY;
+			auto sy = pdfData.coords.pageHeight - pdfData.coords.margins.top;
+
+			pdfData.painter->DrawLine( x, sy, x, y );
+
+			for( int c = 0; c < table.size(); ++c )
+			{
+				x += table.at( c ).at( 0 ).width + c_tableMargin * 2.0;
+
+				pdfData.painter->DrawLine( x, sy, x, y );
+			}
+
+			pdfData.painter->DrawLine( startX, y, endX, y );
+
+			ret.append( { pdfData.currentPageIdx, endY,
+				pdfData.coords.pageHeight - pdfData.coords.margins.top - endY } );
+		}
+	}
+
+	pdfData.coords.y = endY;
+	pdfData.painter->SetPage( pdfData.doc->GetPage( pdfData.currentPageIdx ) );
 
 	return ret;
 }
