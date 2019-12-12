@@ -1517,6 +1517,7 @@ PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts
 								item.word = w;
 								item.font = font;
 								item.url = url;
+								item.color = renderOpts.m_linkColor;
 
 								data.items.append( item );
 							}
@@ -1552,6 +1553,54 @@ PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts
 	return auxTable;
 }
 
+void
+PdfRenderer::calculateCellsSize( PdfAuxData & pdfData, QVector< QVector< CellData > > & auxTable,
+	double spaceWidth, double offset, double lineHeight )
+{
+	QVector< double > columnWidthes;
+	columnWidthes.resize( auxTable.size() );
+
+	int i = 0;
+
+	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
+	{
+		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
+		{
+			cit->calculateWidth( spaceWidth );
+
+			if( cit->width > columnWidthes[ i ] )
+				columnWidthes[ i ] = cit->width;
+		}
+
+		++i;
+	}
+
+	const auto availableWidth = pdfData.coords.pageWidth - pdfData.coords.margins.left -
+		pdfData.coords.margins.right - offset;
+
+	const auto width = std::accumulate( columnWidthes.cbegin(), columnWidthes.cend(), 0.0 ) +
+		c_tableMargin * 2.0 * columnWidthes.size();
+
+	const auto ratio = availableWidth / width;
+
+	std::transform( columnWidthes.begin(), columnWidthes.end(), columnWidthes.begin(),
+		[&] ( double w ) -> double { w *= ratio; w -= c_tableMargin * 2.0; return w; } );
+
+	i = 0;
+
+	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
+	{
+		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
+			cit->width = columnWidthes[ i ];
+
+		++i;
+	}
+
+	for( auto it = auxTable.begin(), last = auxTable.end(); it != last; ++it )
+		for( auto cit = it->begin(), clast = it->end(); cit != clast; ++cit )
+			cit->heightToWidth( lineHeight, spaceWidth );
+}
+
 QVector< WhereDrawn >
 PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	MD::Table * item, QSharedPointer< MD::Document > doc, double offset )
@@ -1561,8 +1610,11 @@ PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
 		pdfData.doc );
 	const auto lineHeight = font->GetFontMetrics()->GetLineSpacing();
+	const auto spaceWidth = font->GetFontMetrics()->StringWidth( PdfString( " " ) );
 
 	auto auxTable = createAuxTable( pdfData, renderOpts, item, doc );
+
+	calculateCellsSize( pdfData, auxTable, spaceWidth, offset, lineHeight );
 
 	return ret;
 }

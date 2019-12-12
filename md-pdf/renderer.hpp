@@ -151,8 +151,8 @@ private:
 	PdfFont * createFont( const QString & name, bool bold, bool italic, float size,
 		PdfMemDocument * doc );
 	void createPage( PdfAuxData & pdfData );
-	PdfString createPdfString( const QString & text );
-	QString createQString( const PdfString & str );
+	static PdfString createPdfString( const QString & text );
+	static QString createQString( const PdfString & str );
 
 	void moveToNewLine( PdfAuxData & pdfData, double xOffset, double yOffset,
 		double yOffsetMultiplier = 1.0 );
@@ -210,6 +210,18 @@ private:
 		QColor color;
 		QColor background;
 		PdfFont * font = nullptr;
+
+		double width() const
+		{
+			if( !word.isEmpty() )
+				return font->GetFontMetrics()->StringWidth( createPdfString( word ) );
+			else if( !image.isNull() )
+				return image.width();
+			else if( !url.isEmpty() )
+				return font->GetFontMetrics()->StringWidth( createPdfString( url ) );
+			else
+				return 0.0;
+		}
 	}; // struct CellItem
 
 	struct CellData {
@@ -217,11 +229,102 @@ private:
 		double height = 0.0;
 		MD::Table::Alignment alignment;
 		QVector< CellItem > items;
+
+		void calculateWidth( double spaceWidth )
+		{
+			double w = 0.0;
+
+			for( auto it = items.cbegin(), last = items.cend(); it != last; ++it )
+			{
+				double sw = spaceWidth;
+
+				if( it != items.cbegin() && it->font == ( it - 1 )->font )
+					sw = it->font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+
+				if( it != items.cbegin() && it->image.isNull() )
+					w += sw;
+
+				if( it->image.isNull() )
+					w += it->width();
+				else
+				{
+					if( it->image.width() > width )
+						width = it->image.width();
+
+					if( w > width )
+						width = w;
+
+					w = 0.0;
+				}
+			}
+
+			if( w > width )
+				width = w;
+		}
+
+		void heightToWidth( double lineHeight, double spaceWidth )
+		{
+			height = 0.0;
+
+			bool newLine = true;
+
+			double w = 0.0;
+
+			for( auto it = items.cbegin(), last = items.cend(); it != last; ++it )
+			{
+				if( it->image.isNull() )
+				{
+					if( newLine )
+						height += lineHeight;
+
+					w += it->width();
+
+					if( w >= width )
+						newLine = true;
+
+					double sw = spaceWidth;
+
+					if( it != items.cbegin() && it->font == ( it - 1 )->font )
+						sw = it->font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+
+					if( it + 1 != last )
+					{
+						if( w + sw + ( it + 1 )->width() > width )
+							newLine = true;
+						else
+						{
+							w += sw;
+							newLine = false;
+						}
+					}
+				}
+				else
+				{
+					height += it->image.height() / ( it->image.width() / width );
+					newLine = true;
+				}
+			}
+		}
 	}; //  struct CellData
+
+	double rowHeight( const QVector< QVector< CellData > > & table, int row )
+	{
+		double h = 0.0;
+
+		for( auto it = table.cbegin(), last = table.cend(); it != last; ++it )
+		{
+			if( (*it)[ row ].height > h )
+				h = (*it)[ row ].height;
+		}
+
+		return  h;
+	}
 
 	QVector< QVector< CellData > >
 	createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Table * item, QSharedPointer< MD::Document > doc );
+	void calculateCellsSize( PdfAuxData & pdfData, QVector< QVector< CellData > > & auxTable,
+		double spaceWidth, double offset, double lineHeight );
 
 private:
 	QString m_fileName;
