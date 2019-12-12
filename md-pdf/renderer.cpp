@@ -1565,6 +1565,15 @@ PdfRenderer::createAuxTable( PdfAuxData & pdfData, const RenderOpts & renderOpts
 								data.items.append( item );
 							}
 						}
+						else
+						{
+							CellItem item;
+							item.font = font;
+							item.url = url;
+							item.color = renderOpts.m_linkColor;
+
+							data.items.append( item );
+						}
 					}
 						break;
 
@@ -1704,13 +1713,16 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 			return ret;
 	}
 
+	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
+		pdfData.doc );
+
 	const auto startPage = pdfData.currentPageIdx;
 	const auto startY = pdfData.coords.y;
 	auto endPage = startPage;
 	auto endY = startY;
-	bool newLine = true;
 	int currentPage = startPage;
 
+	// Create new page if necessary.
 	auto newPage = [&] ()
 	{
 		if( currentPage + 1 > pdfData.currentPageIdx )
@@ -1731,12 +1743,153 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 
 			pdfData.painter->SetPage( pdfData.doc->GetPage( currentPage ) );
 		}
+	}; // newPage
 
-		newLine = true;
-	};
+	// Holder of single line in table.
+	struct TextToDraw {
+		double width = 0.0;
+		double availableWidth = 0.0;
+		double lineHeight = 0.0;
+		MD::Table::Alignment alignment;
+		QVector< CellItem > text;
+
+		void clear()
+		{
+			width = 0.0;
+			text.clear();
+		}
+	}; // struct TextToDraw
+
+	TextToDraw text;
+
+	QMap< QString, QVector< QPair< QRectF, int > > > links;
+
+	// Draw single line in table row.
+	auto drawLine = [&]( double x, double & y )
+	{
+		y -= lineHeight;
+
+		if( y < pdfData.coords.margins.bottom )
+		{
+			newPage();
+
+			y = pdfData.coords.pageHeight - pdfData.coords.margins.top - lineHeight;
+		}
+
+		if( text.width <= text.availableWidth )
+		{
+			switch( text.alignment )
+			{
+				case MD::Table::AlignRight :
+					x = x + text.availableWidth - text.width;
+					break;
+
+				case MD::Table::AlignCenter :
+					x = x + ( text.availableWidth - text.width ) / 2.0;
+					break;
+
+				default :
+					break;
+			}
+		}
+		else
+		{
+			const auto str = ( text.text.first().word.isEmpty() ? text.text.first().url :
+				text.text.first().word );
+
+			QString res;
+
+			double w = 0.0;
+
+			auto * fm = text.text.first().font->GetFontMetrics();
+
+			for( const auto & ch : str )
+			{
+				w += fm->UnicodeCharWidth( ch.unicode() );
+
+				if( w >= text.availableWidth )
+					break;
+				else
+					res.append( ch );
+			}
+
+			text.text.first().word = res;
+		}
+
+		for( auto it = text.text.cbegin(), last = text.text.cend(); it != last; ++it )
+		{
+			if( it->background.isValid() )
+			{
+				pdfData.painter->Save();
+
+				pdfData.painter->SetColor( it->background.redF(),
+					it->background.greenF(),
+					it->background.redF() );
+
+				pdfData.painter->Rectangle( x, y + it->font->GetFontMetrics()->GetDescent(),
+					it->width(), it->font->GetFontMetrics()->GetLineSpacing() );
+
+				pdfData.painter->Fill();
+
+				pdfData.painter->Restore();
+			}
+
+			pdfData.painter->Save();
+
+			if( it->color.isValid() )
+				pdfData.painter->SetColor( it->color.redF(),
+					it->color.greenF(), it->color.blueF() );
+
+			pdfData.painter->SetFont( it->font );
+			pdfData.painter->DrawText( x, y, createPdfString( it->word.isEmpty() ?
+				it->url : it->word ) );
+
+			pdfData.painter->Restore();
+
+			if( !it->url.isEmpty() )
+				links[ it->url ].append( qMakePair( QRectF( x, y, it->width(), lineHeight ),
+					currentPage ) );
+
+			x += it->width();
+
+			if( it + 1 != last )
+			{
+				auto tmpX = x;
+
+				if( it->background.isValid() && it->font == ( it + 1 )->font )
+				{
+					pdfData.painter->Save();
+
+					pdfData.painter->SetColor( it->background.redF(),
+						it->background.greenF(),
+						it->background.redF() );
+
+					const auto sw = it->font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+
+					pdfData.painter->Rectangle( x, y + it->font->GetFontMetrics()->GetDescent(),
+						sw, it->font->GetFontMetrics()->GetLineSpacing() );
+
+					x += sw;
+
+					pdfData.painter->Fill();
+
+					pdfData.painter->Restore();
+				}
+				else
+					x += font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+
+				if( !( it + 1 )->url.isEmpty() && it->url == ( it + 1 )->url )
+					links[ it->url ].append( qMakePair( QRectF( tmpX, y, x - tmpX, lineHeight ),
+						currentPage ) );
+			}
+		}
+
+		text.clear();
+	}; // drawLine
 
 	int column = 0;
 
+	// Draw cells.
 	for( auto it = table.cbegin(), last = table.cend(); it != last; ++it )
 	{
 		{
@@ -1745,6 +1898,10 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 			if( m_terminate )
 				return ret;
 		}
+
+		text.alignment = it->at( 0 ).alignment;
+		text.availableWidth = it->at( 0 ).width;
+		text.lineHeight = lineHeight;
 
 		pdfData.painter->SetPage( pdfData.doc->GetPage( startPage ) );
 
@@ -1771,6 +1928,9 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 
 		for( auto c = it->at( row ).items.cbegin(), clast = it->at( row ).items.cend(); c != clast; ++c )
 		{
+			if( !c->image.isNull() && !text.text.isEmpty() )
+				drawLine( x, y );
+
 			if( !c->image.isNull() )
 			{
 				if( textBefore )
@@ -1812,19 +1972,51 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 
 				pdfData.painter->DrawImage( x + o, y, &img, ratio, ratio );
 
-				newLine = true;
 				textBefore = false;
 			}
 			else
 			{
-				if( newLine )
-					y -= lineHeight;
+				const auto w = c->font->GetFontMetrics()->StringWidth(
+					createPdfString( c->word.isEmpty() ? c->url : c->word ) );
+				double s = 0.0;
+
+				if( !text.text.isEmpty() )
+				{
+					if( text.text.last().font == c->font )
+						s = c->font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+					else
+						s = font->GetFontMetrics()->StringWidth( PdfString( " " ) );
+				}
+
+				if( text.width + s + w <= it->at( 0 ).width )
+				{
+					text.text.append( *c );
+					text.width += s + w;
+				}
+				else
+				{
+					if( !text.text.isEmpty() )
+					{
+						drawLine( x, y );
+						text.text.append( *c );
+						text.width += w;
+					}
+					else
+					{
+						text.text.append( *c );
+						text.width += w;
+						drawLine( x, y );
+					}
+				}
 
 				textBefore = true;
 			}
 		}
 
-		y -= c_tableMargin;
+		if( !text.text.isEmpty() )
+			drawLine( x, y );
+
+		y -= c_tableMargin - font->GetFontMetrics()->GetDescent();
 
 		if( y < endY  && currentPage == pdfData.currentPageIdx )
 			endY = y;
@@ -1832,9 +2024,13 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 		++ column;
 	}
 
+	// Draw borders.
 	for( int i = startPage; i <= pdfData.currentPageIdx; ++i )
 	{
 		pdfData.painter->SetPage( pdfData.doc->GetPage( i ) );
+
+		pdfData.painter->Save();
+
 		pdfData.painter->SetColor( renderOpts.m_borderColor.redF(),
 			renderOpts.m_borderColor.greenF(),
 			renderOpts.m_borderColor.blueF() );
@@ -1912,10 +2108,15 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 			ret.append( { pdfData.currentPageIdx, endY,
 				pdfData.coords.pageHeight - pdfData.coords.margins.top - endY } );
 		}
+
+		pdfData.painter->Restore();
 	}
 
 	pdfData.coords.y = endY;
 	pdfData.painter->SetPage( pdfData.doc->GetPage( pdfData.currentPageIdx ) );
+
+	// TO DO!!!
+	// Create links.
 
 	return ret;
 }
