@@ -1713,6 +1713,8 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 			return ret;
 	}
 
+	emit status( tr( "Drawing table row." ) );
+
 	auto * font = createFont( renderOpts.m_textFont, false, false, renderOpts.m_textFontSize,
 		pdfData.doc );
 
@@ -1898,6 +1900,8 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 			if( m_terminate )
 				return ret;
 		}
+
+		emit status( tr( "Drawing table cell." ) );
 
 		text.alignment = it->at( 0 ).alignment;
 		text.availableWidth = it->at( 0 ).width;
