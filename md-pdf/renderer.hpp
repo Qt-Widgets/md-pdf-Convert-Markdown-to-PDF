@@ -301,6 +301,31 @@ private:
 	QVector< WhereDrawn > drawTableRow( QVector< QVector< CellData > > & table, int row,
 		PdfAuxData & pdfData, double offset, double lineHeight,
 		const RenderOpts & renderOpts );
+	void drawTableBorder( PdfAuxData & pdfData, int startPage, QVector< WhereDrawn > & ret,
+		const RenderOpts & renderOpts, double offset, const QVector< QVector< CellData > > & table,
+		double startY, double endY );
+
+	// Holder of single line in table.
+	struct TextToDraw {
+		double width = 0.0;
+		double availableWidth = 0.0;
+		double lineHeight = 0.0;
+		MD::Table::Alignment alignment;
+		QVector< CellItem > text;
+
+		void clear()
+		{
+			width = 0.0;
+			text.clear();
+		}
+	}; // struct TextToDraw
+
+	void drawTextLineInTable( double x, double & y, TextToDraw & text, double lineHeight,
+		PdfAuxData & pdfData, QMap< QString, QVector< QPair< QRectF, int > > > & links,
+		PdfFont * font, int currentPage, int & endPage, double & endY );
+
+	void newPageInTable( PdfAuxData & pdfData, int & currentPage, int & endPage,
+		double & endY );
 
 private:
 	QString m_fileName;
