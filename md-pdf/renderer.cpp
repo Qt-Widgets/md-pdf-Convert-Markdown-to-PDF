@@ -1954,7 +1954,7 @@ PdfRenderer::drawTableBorder( PdfAuxData & pdfData, int startPage, QVector< Wher
 void
 PdfRenderer::drawTextLineInTable( double x, double & y, TextToDraw & text, double lineHeight,
 	PdfAuxData & pdfData, QMap< QString, QVector< QPair< QRectF, int > > > & links,
-	PdfFont * font, int currentPage, int & endPage, double & endY )
+	PdfFont * font, int & currentPage, int & endPage, double & endY )
 {
 	y -= lineHeight;
 

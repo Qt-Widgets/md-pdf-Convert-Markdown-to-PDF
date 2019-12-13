@@ -322,7 +322,7 @@ private:
 
 	void drawTextLineInTable( double x, double & y, TextToDraw & text, double lineHeight,
 		PdfAuxData & pdfData, QMap< QString, QVector< QPair< QRectF, int > > > & links,
-		PdfFont * font, int currentPage, int & endPage, double & endY );
+		PdfFont * font, int & currentPage, int & endPage, double & endY );
 
 	void newPageInTable( PdfAuxData & pdfData, int & currentPage, int & endPage,
 		double & endY );
