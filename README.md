@@ -17,7 +17,9 @@ your opinion).
 
 # Status
 
-Under construction.
+Alpha version is ready. Surely, there possible issues in the application.
+But we don't afraid of bugs. Just post the issue here, and I will fix it
+as soon as possible.
 
 # License
 
