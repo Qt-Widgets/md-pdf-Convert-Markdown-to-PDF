@@ -21,6 +21,30 @@ Alpha version is ready. Surely, there possible issues in the application.
 But we don't afraid of bugs. Just post the issue here, and I will fix it
 as soon as possible.
 
+The application is tested on Mac OS, Linux, Windows 10.
+
 # License
 
 GNU GPL version 3
+
+# Building
+
+To build this application first of all install dependencies of PoDoFo
+
+* freetype
+* libjpeg
+* zlib
+
+On UNIX you also need
+
+* fontconfig
+
+With these dependencies installed just open CMakeLists.txt in QtCreator and run build.
+
+# Fonts
+
+If you will have problems with characters in PDF on your system, try to choose another
+font. Not all fonts are supported that supported by Qt, not all fonts have full list
+of Unicode characters needed by your Markdown. Just play with fonts comboboxes in the GUI.
+
+Thank you!
