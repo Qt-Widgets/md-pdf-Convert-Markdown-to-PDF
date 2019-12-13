@@ -491,7 +491,7 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	if( doc->labeledLinks().contains( url ) )
 		url = doc->labeledLinks()[ url ]->url();
 
-	if( !QUrl( item->url() ).isRelative() )
+	if( !QUrl( url ).isRelative() )
 	{
 		for( const auto & r : qAsConst( rects ) )
 		{
@@ -500,14 +500,14 @@ PdfRenderer::drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 			annot->SetBorderStyle( 0.0, 0.0, 0.0 );
 
 			PdfAction action( ePdfAction_URI, pdfData.doc );
-			action.SetURI( PdfString( item->url().toLatin1().data() ) );
+			action.SetURI( PdfString( url.toLatin1().data() ) );
 
 			annot->SetAction( action );
 			annot->SetFlags( ePdfAnnotationFlags_NoZoom );
 		}
 	}
 	else
-		m_unresolvedLinks.insert( item->url(), rects );
+		m_unresolvedLinks.insert( url, rects );
 
 	return rects;
 }
@@ -1672,14 +1672,16 @@ PdfRenderer::drawTable( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 	moveToNewLine( pdfData, offset, lineHeight, 1.0 );
 
 	for( int row = 0; row < auxTable[ 0 ].size(); ++row )
-		ret.append( drawTableRow( auxTable, row, pdfData, offset, lineHeight, renderOpts ) );
+		ret.append( drawTableRow( auxTable, row, pdfData, offset, lineHeight, renderOpts,
+			doc ) );
 
 	return ret;
 }
 
 QVector< WhereDrawn >
 PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfAuxData & pdfData,
-	double offset, double lineHeight, const RenderOpts & renderOpts )
+	double offset, double lineHeight, const RenderOpts & renderOpts,
+	QSharedPointer< MD::Document > doc )
 {
 	QVector< WhereDrawn > ret;
 
@@ -1852,8 +1854,7 @@ PdfRenderer::drawTableRow( QVector< QVector< CellData > > & table, int row, PdfA
 	pdfData.coords.y = endY;
 	pdfData.painter->SetPage( pdfData.doc->GetPage( pdfData.currentPageIdx ) );
 
-	// TO DO!!!
-	// Create links.
+	processLinksInTable( pdfData, links, doc );
 
 	return ret;
 }
@@ -2097,5 +2098,62 @@ PdfRenderer::newPageInTable( PdfAuxData & pdfData, int & currentPage, int & endP
 		++currentPage;
 
 		pdfData.painter->SetPage( pdfData.doc->GetPage( currentPage ) );
+	}
+}
+
+void
+PdfRenderer::processLinksInTable( PdfAuxData & pdfData,
+	const QMap< QString, QVector< QPair< QRectF, int > > > & links,
+	QSharedPointer< MD::Document > doc )
+{
+	for( auto it = links.cbegin(), last = links.cend(); it != last; ++it )
+	{
+		QString url = it.key();
+
+		if( doc->labeledLinks().contains( url ) )
+			url = doc->labeledLinks()[ url ]->url();
+
+		auto tmp = it.value();
+
+		if( !tmp.isEmpty() )
+		{
+			QVector< QPair< QRectF, int > > rects;
+			QPair< QRectF, int > r = tmp.first();
+
+			for( auto rit = tmp.cbegin() + 1, rlast = tmp.cend(); rit != rlast; ++rit )
+			{
+				if( r.second == rit->second &&
+					qAbs( r.first.x() + r.first.width() - rit->first.x() ) < 0.001 &&
+					qAbs( r.first.y() - rit->first.y() ) < 0.001 )
+				{
+					r.first.setWidth( r.first.width() + rit->first.width() );
+				}
+				else
+				{
+					rects.append( r );
+					r = *rit;
+				}
+			}
+
+			rects.append( r );
+
+			if( !QUrl( url ).isRelative() )
+			{
+				for( const auto & r : qAsConst( rects ) )
+				{
+					auto * annot = pdfData.doc->GetPage( r.second )->CreateAnnotation( ePdfAnnotation_Link,
+						PdfRect( r.first.x(), r.first.y(), r.first.width(), r.first.height() ) );
+					annot->SetBorderStyle( 0.0, 0.0, 0.0 );
+
+					PdfAction action( ePdfAction_URI, pdfData.doc );
+					action.SetURI( PdfString( url.toLatin1().data() ) );
+
+					annot->SetAction( action );
+					annot->SetFlags( ePdfAnnotationFlags_NoZoom );
+				}
+			}
+			else
+				m_unresolvedLinks.insert( url, rects );
+		}
 	}
 }

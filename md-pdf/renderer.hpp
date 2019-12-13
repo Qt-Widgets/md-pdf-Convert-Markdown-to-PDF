@@ -300,7 +300,7 @@ private:
 		double spaceWidth, double offset, double lineHeight );
 	QVector< WhereDrawn > drawTableRow( QVector< QVector< CellData > > & table, int row,
 		PdfAuxData & pdfData, double offset, double lineHeight,
-		const RenderOpts & renderOpts );
+		const RenderOpts & renderOpts, QSharedPointer< MD::Document > doc );
 	void drawTableBorder( PdfAuxData & pdfData, int startPage, QVector< WhereDrawn > & ret,
 		const RenderOpts & renderOpts, double offset, const QVector< QVector< CellData > > & table,
 		double startY, double endY );
@@ -323,9 +323,11 @@ private:
 	void drawTextLineInTable( double x, double & y, TextToDraw & text, double lineHeight,
 		PdfAuxData & pdfData, QMap< QString, QVector< QPair< QRectF, int > > > & links,
 		PdfFont * font, int & currentPage, int & endPage, double & endY );
-
 	void newPageInTable( PdfAuxData & pdfData, int & currentPage, int & endPage,
 		double & endY );
+	void processLinksInTable( PdfAuxData & pdfData,
+		const QMap< QString, QVector< QPair< QRectF, int > > > & links,
+		QSharedPointer< MD::Document > doc );
 
 private:
 	QString m_fileName;
