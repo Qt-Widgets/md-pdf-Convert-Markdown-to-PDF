@@ -544,7 +544,6 @@ PdfRenderer::drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 {
 	Q_UNUSED( doc )
 	Q_UNUSED( renderOpts )
-	Q_UNUSED( background )
 
 	bool draw = true;
 
