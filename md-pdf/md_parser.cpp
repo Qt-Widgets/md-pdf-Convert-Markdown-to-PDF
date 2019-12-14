@@ -139,6 +139,8 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 			}
 			else if( s.isEmpty() )
 				return BlockType::Unknown;
+			else if( s.startsWith( QLatin1Char( '#' ) ) )
+				return BlockType::Heading;
 			else
 				return BlockType::Text;
 		}
@@ -168,6 +170,8 @@ Parser::whatIsTheLine( const QString & str, bool inList ) const
 		}
 		else if( s.isEmpty() )
 			return BlockType::Unknown;
+		else if( s.startsWith( QLatin1Char( '#' ) ) )
+			return BlockType::Heading;
 		else
 			return BlockType::Text;
 	}
@@ -201,6 +205,10 @@ Parser::parseFragment( QStringList & fr, QSharedPointer< Block > parent,
 
 			parseCodeIndentedBySpaces( fr, parent, indent );
 		}
+			break;
+
+		case BlockType::Heading :
+			parseHeading( fr, parent, doc, linksToParse, workingPath, fileName );
 			break;
 
 		case BlockType::List :

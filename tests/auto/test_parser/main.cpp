@@ -2545,3 +2545,27 @@ TEST_CASE( "tables" )
 	REQUIRE( table->columnAlignment( 0 ) == MD::Table::AlignCenter );
 	REQUIRE( table->columnAlignment( 1 ) == MD::Table::AlignRight );
 }
+
+TEST_CASE( "without spaces" )
+{
+	MD::Parser parser;
+	auto doc = parser.parse( QLatin1String( "./test48.md" ) );
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 4 );
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Anchor );
+
+	REQUIRE( doc->items().at( 1 )->type() == MD::ItemType::Heading );
+	REQUIRE( static_cast< MD::Heading* > ( doc->items().at( 1 ).data() )->text() ==
+		QLatin1String( "Heading" ) );
+
+	REQUIRE( doc->items().at( 2 )->type() == MD::ItemType::Paragraph );
+	auto * p = static_cast< MD::Paragraph* > ( doc->items().at( 2 ).data() );
+	REQUIRE( p->items().size() == 1 );
+	REQUIRE( p->items().at( 0 )->type() == MD::ItemType::Text );
+	REQUIRE( static_cast< MD::Text* > ( p->items().at( 0 ).data() )->text() ==
+		QLatin1String( "Paragraph" ) );
+
+	REQUIRE( doc->items().at( 3 )->type() == MD::ItemType::Heading );
+	REQUIRE( static_cast< MD::Heading* > ( doc->items().at( 3 ).data() )->text() ==
+		QLatin1String( "Heading" ) );
+}

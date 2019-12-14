@@ -58,7 +58,8 @@ private:
 		List,
 		CodeIndentedBySpaces,
 		Code,
-		Blockquote
+		Blockquote,
+		Heading
 	}; // enum BlockType
 
 	BlockType whatIsTheLine( const QString & str, bool inList = false ) const;
@@ -286,8 +287,11 @@ private:
 			if( type != lineType && type != BlockType::Code && type != BlockType::List )
 			{
 				pf();
+
 				type = lineType;
-				fragment.append( line );
+
+				if( !line.isEmpty() )
+					fragment.append( line );
 			}
 			// End of code block.
 			else if( type == BlockType::Code && type == lineType )
