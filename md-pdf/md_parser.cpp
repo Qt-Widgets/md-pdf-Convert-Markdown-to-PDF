@@ -231,20 +231,12 @@ Parser::parseText( QStringList & fr, QSharedPointer< Block > parent,
 	QSharedPointer< Document > doc, QStringList & linksToParse,
 	const QString & workingPath, const QString & fileName )
 {
-	static const QRegExp hr( QLatin1String( "^\\s*#+\\s+.*" ) );
 	static const QRegExp fnr( QLatin1String( "\\s*\\[\\^[^\\s]*\\]:.*" ) );
 	static const QRegExp thr( QLatin1String( "\\s*\\|\\s*" ) );
 	static const QRegExp tcr( QLatin1String(
 		"^\\s*\\|?(\\s*:?-{3,}:?\\s*\\|)*\\s*:?-{3,}:?\\s*\\|?\\s*$" ) );
 
-	if( hr.exactMatch( fr.first() ) )
-	{
-		parseHeading( fr, parent, doc, linksToParse, workingPath, fileName );
-
-		if( !fr.isEmpty() )
-			parseFragment( fr, parent, doc, linksToParse, workingPath, fileName );
-	}
-	else if( fnr.exactMatch( fr.first() ) )
+	if( fnr.exactMatch( fr.first() ) )
 		parseFootnote( fr, parent, doc, linksToParse, workingPath, fileName );
 	else if( thr.indexIn( fr.first() ) > -1 && fr.size() > 1 && tcr.exactMatch( fr.at( 1 ) ) )
 		parseTable( fr, parent, doc, linksToParse, workingPath, fileName );

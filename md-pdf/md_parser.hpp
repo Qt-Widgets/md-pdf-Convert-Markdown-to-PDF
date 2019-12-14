@@ -283,7 +283,7 @@ private:
 				}
 			}
 
-			// Something new and this is not a code block.
+			// Something new and this is not a code block or a list.
 			if( type != lineType && type != BlockType::Code && type != BlockType::List )
 			{
 				pf();
