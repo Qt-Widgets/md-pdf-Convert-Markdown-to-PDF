@@ -186,22 +186,80 @@ private:
 		MD::ListItem * item, QSharedPointer< MD::Document > doc, int & idx,
 		ListItemType & prevListItemType, int bulletWidth, double offset = 0.0 );
 
+	struct CustomWidth {
+		struct Width {
+			double width = 0.0;
+			bool isSpace = false;
+			bool isNewLine = false;
+			bool shrink = true;
+			QString word;
+		}; // struct Width
+
+		void append( const Width & w ) { m_width.append( w ); }
+		double scale() { return m_scale.at( m_pos ); }
+		void moveToNextLine() { ++m_pos; }
+		bool isDrawing() const { return m_drawing; }
+		void setDrawing( bool on = true ) { m_drawing = on; }
+
+		void calcScale( double lineWidth )
+		{
+			double w = 0.0;
+			double sw = 0.0;
+			double ww = 0.0;
+
+			for( int i = 0, last = m_width.size(); i < last; ++i )
+			{
+				w += m_width.at( i ).width;
+
+				if( m_width.at( i ).isSpace )
+					sw += m_width.at( i ).width;
+				else
+					ww += m_width.at( i ).width;
+
+				if( m_width.at( i ).isNewLine )
+				{
+					if( m_width.at( i ).shrink )
+					{
+						auto ss = ( lineWidth - w + sw ) / sw;
+
+						while( ww + sw * ss > lineWidth )
+							ss -= 0.001;
+
+						m_scale.append( 100.0 * ss );
+					}
+					else
+						m_scale.append( 100.0 );
+
+					w = 0.0;
+					sw = 0.0;
+					ww = 0.0;
+				}
+			}
+		}
+
+	private:
+		bool m_drawing = false;
+		QVector< Width > m_width;
+		QVector< double > m_scale;
+		int m_pos = 0;
+	}; // struct CustomWidth
+
 	QVector< QPair< QRectF, int > > drawText( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Text * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
-		bool firstInParagraph = false );
+		bool firstInParagraph = false, CustomWidth * cw = nullptr );
 	QVector< QPair< QRectF, int > > drawInlinedCode( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Code * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset,
-		bool firstInParagraph );
+		bool firstInParagraph, CustomWidth * cw = nullptr );
 	QVector< QPair< QRectF, int > > drawString( PdfAuxData & pdfData, const RenderOpts & renderOpts,
-		const QString & str, bool bold, bool italic, bool strikethrough,
+		const QString & str, PdfFont * spaceFont, PdfFont * font, double lineHeight,
 		QSharedPointer< MD::Document > doc, bool & newLine, double offset,
-		bool firstInParagraph );
+		bool firstInParagraph, CustomWidth * cw = nullptr, const QColor & background = QColor() );
 	QVector< QPair< QRectF, int > > drawLink( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Link * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
-		bool firstInParagraph = false );
+		bool firstInParagraph = false, CustomWidth * cw = nullptr );
 	QPair< QRectF, int > drawImage( PdfAuxData & pdfData, const RenderOpts & renderOpts,
 		MD::Image * item, QSharedPointer< MD::Document > doc, bool & newLine, double offset = 0.0,
-		bool firstInParagraph = false );
+		bool firstInParagraph = false, CustomWidth * cw = nullptr );
 
 	struct CellItem {
 		QString word;
