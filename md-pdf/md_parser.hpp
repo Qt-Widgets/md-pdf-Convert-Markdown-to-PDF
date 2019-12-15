@@ -131,11 +131,18 @@ private:
 
 			if( ce > -1 )
 			{
-				auto s = ( cs < ce ? cs : 0 );
+				if( cs + c_startComment.length() < ce )
+				{
+					line.remove( cs, ce + c_endComment.length() - cs );
 
-				line.remove( s, ce + c_endComment.length() - s );
+					commentFound = false;
+				}
+				else if( commentFound )
+				{
+					line.remove( 0, ce + c_endComment.length() );
 
-				commentFound = false;
+					commentFound = false;
+				}
 			}
 			else if( cs > 0 )
 				return line.left( cs );
