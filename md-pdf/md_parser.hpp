@@ -176,6 +176,7 @@ private:
 				parseFragment( fragment, parent, doc, linksToParse, workingPath, fileName );
 				fragment.clear();
 				type = BlockType::Unknown;
+				emptyLineInList = false;
 			};
 
 		auto rl = [&]() -> QString
