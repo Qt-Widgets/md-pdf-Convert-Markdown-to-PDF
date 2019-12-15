@@ -110,27 +110,22 @@ private:
 
 	// Read line from stream.
 	template< typename STREAM >
-	QString readLine( STREAM & stream, bool * commentFound = nullptr )
+	QString readLine( STREAM & stream, bool & commentFound )
 	{
 		static const QString c_startComment = QLatin1String( "<!--" );
 		static const QString c_endComment = QLatin1String( "-->" );
-
-		bool cf = false;
-
-		if( !commentFound )
-			commentFound = &cf;
 
 		auto line = stream.readLine();
 
 		auto cs = line.indexOf( c_startComment );
 
-		if( !*commentFound && cs > -1 )
-			*commentFound = true;
+		if( !commentFound && cs > -1 )
+			commentFound = true;
 
 		if( cs == -1 )
 			cs = 0;
 
-		while( *commentFound && !stream.atEnd() )
+		while( commentFound && !stream.atEnd() )
 		{
 			auto ce = line.indexOf( c_endComment );
 
@@ -140,18 +135,20 @@ private:
 
 				line.remove( s, ce + c_endComment.length() - s );
 
-				*commentFound = false;
+				commentFound = false;
 			}
+			else if( cs > 0 )
+				return line.left( cs );
 			else
 				return readLine( stream, commentFound );
 
 			cs = line.indexOf( c_startComment );
 
-			if( !*commentFound && cs > -1 )
-				*commentFound = true;
+			if( !commentFound && cs > -1 )
+				commentFound = true;
 		}
 
-		if( *commentFound )
+		if( commentFound )
 			return QString();
 		else
 			return line;
@@ -179,9 +176,11 @@ private:
 				emptyLineInList = false;
 			};
 
+		bool commentFound = false;
+
 		auto rl = [&]() -> QString
 		{
-			auto line = readLine( stream );
+			auto line = readLine( stream, commentFound );
 
 			if( skipSpacesAtStartOfLine )
 			{

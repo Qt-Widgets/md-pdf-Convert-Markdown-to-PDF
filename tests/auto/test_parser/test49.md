@@ -1,5 +1,4 @@
-# Heading <!-- comment --> 1
-<!--
+# Heading <!-- comment --> 1<!--
 comment
 comment
 --># Heading <!-- comment --> 1 <!-- comment -->
