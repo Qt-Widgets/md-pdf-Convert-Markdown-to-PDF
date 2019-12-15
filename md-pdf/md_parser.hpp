@@ -108,6 +108,55 @@ private:
 		const QString & fileName );
 	bool fileExists( const QString & fileName, const QString & workingPath ) const;
 
+	// Read line from stream.
+	template< typename STREAM >
+	QString readLine( STREAM & stream, bool * commentFound = nullptr )
+	{
+		static const QString c_startComment = QLatin1String( "<!--" );
+		static const QString c_endComment = QLatin1String( "-->" );
+
+		bool cf = false;
+
+		if( !commentFound )
+			commentFound = &cf;
+
+		auto line = stream.readLine();
+
+		auto cs = line.indexOf( c_startComment );
+
+		if( !*commentFound && cs > -1 )
+			*commentFound = true;
+
+		if( cs == -1 )
+			cs = 0;
+
+		while( *commentFound && !stream.atEnd() )
+		{
+			auto ce = line.indexOf( c_endComment );
+
+			if( ce > -1 )
+			{
+				auto s = ( cs < ce ? cs : 0 );
+
+				line.remove( s, ce + c_endComment.length() - s );
+
+				*commentFound = false;
+			}
+			else
+				return readLine( stream, commentFound );
+
+			cs = line.indexOf( c_startComment );
+
+			if( !*commentFound && cs > -1 )
+				*commentFound = true;
+		}
+
+		if( *commentFound )
+			return QString();
+		else
+			return line;
+	};
+
 	template< typename STREAM >
 	void parse( STREAM & stream, QSharedPointer< Block > parent,
 		QSharedPointer< Document > doc, QStringList & linksToParse,
@@ -129,29 +178,28 @@ private:
 				type = BlockType::Unknown;
 			};
 
-		// Read line from stream.
 		auto rl = [&]() -> QString
+		{
+			auto line = readLine( stream );
+
+			if( skipSpacesAtStartOfLine )
 			{
-				auto line = stream.readLine();
+				line.replace( QLatin1Char( '\t' ), QLatin1String( "    " ) );
 
-				if( skipSpacesAtStartOfLine )
+				if( firstLine )
 				{
-					line.replace( QLatin1Char( '\t' ), QLatin1String( "    " ) );
+					static const QRegExp s( QLatin1String( "[^\\s]" ) );
 
-					if( firstLine )
-					{
-						static const QRegExp s( QLatin1String( "[^\\s]" ) );
+					spaces = s.indexIn( line );
 
-						spaces = s.indexIn( line );
-
-						firstLine = false;
-					}
-
-					line = line.right( line.length() - spaces );
+					firstLine = false;
 				}
 
-				return line;
-			};
+				line = line.right( line.length() - spaces );
+			}
+
+			return line;
+		};
 
 		// Eat footnote.
 		auto eatFootnote = [&]()
@@ -182,9 +230,11 @@ private:
 
 		static const QRegExp footnoteRegExp( QLatin1String( "\\s*\\[\\^[^\\s]*\\]:.*" ) );
 
+
 		while( !stream.atEnd() )
 		{
 			auto line = rl();
+
 			auto simplified = line.simplified();
 
 			BlockType lineType = whatIsTheLine( line, emptyLineInList );
@@ -195,6 +245,9 @@ private:
 				type = lineType;
 
 				fragment.append( line );
+
+				if( type == BlockType::Heading )
+					pf();
 
 				continue;
 			}

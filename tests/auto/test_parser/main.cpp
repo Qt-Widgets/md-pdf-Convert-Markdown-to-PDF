@@ -2569,3 +2569,20 @@ TEST_CASE( "without spaces" )
 	REQUIRE( static_cast< MD::Heading* > ( doc->items().at( 3 ).data() )->text() ==
 		QLatin1String( "Heading" ) );
 }
+
+TEST_CASE( "comments" )
+{
+	MD::Parser parser;
+	auto doc = parser.parse( QLatin1String( "./test49.md" ) );
+	REQUIRE( doc->isEmpty() == false );
+	REQUIRE( doc->items().size() == 4 );
+	REQUIRE( doc->items().at( 0 )->type() == MD::ItemType::Anchor );
+
+	for( int i = 1; i < 4; ++i )
+	{
+		REQUIRE( doc->items().at( i )->type() == MD::ItemType::Heading );
+		auto * h = static_cast< MD::Heading* > ( doc->items().at( i ).data() );
+		REQUIRE( h->text() == QLatin1String( "Heading 1" ) );
+		REQUIRE( h->level() == 1 );
+	}
+}
