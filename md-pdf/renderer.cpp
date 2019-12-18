@@ -98,6 +98,11 @@ PdfRenderer::renderImpl()
 
 			pdfData.doc = &document;
 			pdfData.painter = &painter;
+			pdfData.coords.margins.left = m_opts.m_left;
+			pdfData.coords.margins.right = m_opts.m_right;
+			pdfData.coords.margins.top = m_opts.m_top;
+			pdfData.coords.margins.bottom = m_opts.m_bottom;
+
 			createPage( pdfData );
 
 			for( const auto & i : m_doc->items() )
@@ -284,10 +289,12 @@ PdfRenderer::createPage( PdfAuxData & pdfData )
 
 	pdfData.painter->SetPage( pdfData.page );
 
-	pdfData.coords = { { c_margin, c_margin, c_margin, c_margin },
+	pdfData.coords = { { pdfData.coords.margins.left, pdfData.coords.margins.right,
+			pdfData.coords.margins.top, pdfData.coords.margins.bottom },
 		pdfData.page->GetPageSize().GetWidth(),
 		pdfData.page->GetPageSize().GetHeight(),
-		c_margin, pdfData.page->GetPageSize().GetHeight() - c_margin };
+		pdfData.coords.margins.left, pdfData.page->GetPageSize().GetHeight() -
+			pdfData.coords.margins.top };
 
 	++pdfData.currentPageIdx;
 }

@@ -53,6 +53,10 @@ struct RenderOpts
 	QColor m_linkColor;
 	QColor m_borderColor;
 	QColor m_codeBackground;
+	double m_left;
+	double m_right;
+	double m_top;
+	double m_bottom;
 }; // struct RenderOpts
 
 

@@ -55,6 +55,7 @@ private slots:
 	void process();
 	void codeFontSizeChanged( int i );
 	void textFontSizeChanged( int i );
+	void mmButtonToggled( bool on );
 
 private:
 	QScopedPointer< Ui::MainWindow > m_ui;

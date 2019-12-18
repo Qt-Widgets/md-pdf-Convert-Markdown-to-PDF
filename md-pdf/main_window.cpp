@@ -79,6 +79,8 @@ MainWindow::MainWindow()
 	connect( m_ui->m_codeFontSize, signal, this, &MainWindow::codeFontSizeChanged );
 	connect( m_ui->m_textFontSize, signal, this, &MainWindow::textFontSizeChanged );
 
+	connect( m_ui->m_mm, &QToolButton::toggled, this, &MainWindow::mmButtonToggled );
+
 	adjustSize();
 
 	m_thread->start();
@@ -131,6 +133,8 @@ MainWindow::selectMarkdown()
 	}
 }
 
+static const double c_mmPtConvert = 25.4 / 72;
+
 void
 MainWindow::process()
 {
@@ -162,6 +166,15 @@ MainWindow::process()
 			opts.m_linkColor = m_ui->m_linkColor->color();
 			opts.m_borderColor = m_ui->m_borderColor->color();
 			opts.m_codeBackground = m_ui->m_codeBackground->color();
+			opts.m_left = ( m_ui->m_pt->isChecked() ? m_ui->m_left->value() :
+				m_ui->m_left->value() / c_mmPtConvert );
+			opts.m_right = ( m_ui->m_pt->isChecked() ? m_ui->m_right->value() :
+				m_ui->m_right->value() / c_mmPtConvert );
+			opts.m_top = ( m_ui->m_pt->isChecked() ? m_ui->m_top->value() :
+				m_ui->m_top->value() / c_mmPtConvert );
+			opts.m_bottom = ( m_ui->m_pt->isChecked() ? m_ui->m_bottom->value() :
+				m_ui->m_bottom->value() / c_mmPtConvert );
+
 
 			ProgressDlg progress( pdf, this );
 
@@ -199,4 +212,23 @@ MainWindow::textFontSizeChanged( int i )
 {
 	if( i < m_ui->m_codeFontSize->value() )
 		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() );
+}
+
+void
+MainWindow::mmButtonToggled( bool on )
+{
+	if( on )
+	{
+		m_ui->m_left->setValue( m_ui->m_left->value() * c_mmPtConvert );
+		m_ui->m_right->setValue( m_ui->m_right->value() * c_mmPtConvert );
+		m_ui->m_top->setValue( m_ui->m_top->value() * c_mmPtConvert );
+		m_ui->m_bottom->setValue( m_ui->m_bottom->value() * c_mmPtConvert );
+	}
+	else
+	{
+		m_ui->m_left->setValue( m_ui->m_left->value() / c_mmPtConvert );
+		m_ui->m_right->setValue( m_ui->m_right->value() / c_mmPtConvert );
+		m_ui->m_top->setValue( m_ui->m_top->value() / c_mmPtConvert );
+		m_ui->m_bottom->setValue( m_ui->m_bottom->value() / c_mmPtConvert );
+	}
 }
