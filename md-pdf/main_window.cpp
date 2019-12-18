@@ -190,13 +190,13 @@ MainWindow::process()
 void
 MainWindow::codeFontSizeChanged( int i )
 {
-	if( i > m_ui->m_textFontSize->value() - 1 )
-		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() - 1 );
+	if( i > m_ui->m_textFontSize->value() )
+		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() );
 }
 
 void
 MainWindow::textFontSizeChanged( int i )
 {
-	if( i <= m_ui->m_codeFontSize->value() )
-		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() - 1 );
+	if( i < m_ui->m_codeFontSize->value() )
+		m_ui->m_codeFontSize->setValue( m_ui->m_textFontSize->value() );
 }
