@@ -38,6 +38,8 @@
 // podofo include.
 #include <podofo/podofo.h>
 
+static const double c_mmInPt = 25.4 / 72;
+
 
 //
 // MainWindow
@@ -80,6 +82,11 @@ MainWindow::MainWindow()
 	connect( m_ui->m_textFontSize, signal, this, &MainWindow::textFontSizeChanged );
 
 	connect( m_ui->m_mm, &QToolButton::toggled, this, &MainWindow::mmButtonToggled );
+
+	m_ui->m_left->setMaximum( 50 );
+	m_ui->m_right->setMaximum( 50 );
+	m_ui->m_top->setMaximum( 50 );
+	m_ui->m_bottom->setMaximum( 50 );
 
 	adjustSize();
 
@@ -133,8 +140,6 @@ MainWindow::selectMarkdown()
 	}
 }
 
-static const double c_mmPtConvert = 25.4 / 72;
-
 void
 MainWindow::process()
 {
@@ -167,13 +172,13 @@ MainWindow::process()
 			opts.m_borderColor = m_ui->m_borderColor->color();
 			opts.m_codeBackground = m_ui->m_codeBackground->color();
 			opts.m_left = ( m_ui->m_pt->isChecked() ? m_ui->m_left->value() :
-				m_ui->m_left->value() / c_mmPtConvert );
+				m_ui->m_left->value() / c_mmInPt );
 			opts.m_right = ( m_ui->m_pt->isChecked() ? m_ui->m_right->value() :
-				m_ui->m_right->value() / c_mmPtConvert );
+				m_ui->m_right->value() / c_mmInPt );
 			opts.m_top = ( m_ui->m_pt->isChecked() ? m_ui->m_top->value() :
-				m_ui->m_top->value() / c_mmPtConvert );
+				m_ui->m_top->value() / c_mmInPt );
 			opts.m_bottom = ( m_ui->m_pt->isChecked() ? m_ui->m_bottom->value() :
-				m_ui->m_bottom->value() / c_mmPtConvert );
+				m_ui->m_bottom->value() / c_mmInPt );
 
 
 			ProgressDlg progress( pdf, this );
@@ -219,16 +224,26 @@ MainWindow::mmButtonToggled( bool on )
 {
 	if( on )
 	{
-		m_ui->m_left->setValue( m_ui->m_left->value() * c_mmPtConvert );
-		m_ui->m_right->setValue( m_ui->m_right->value() * c_mmPtConvert );
-		m_ui->m_top->setValue( m_ui->m_top->value() * c_mmPtConvert );
-		m_ui->m_bottom->setValue( m_ui->m_bottom->value() * c_mmPtConvert );
+		m_ui->m_left->setValue( qRound( m_ui->m_left->value() * c_mmInPt ) );
+		m_ui->m_right->setValue( qRound( m_ui->m_right->value() * c_mmInPt ) );
+		m_ui->m_top->setValue( qRound( m_ui->m_top->value() * c_mmInPt ) );
+		m_ui->m_bottom->setValue( qRound( m_ui->m_bottom->value() * c_mmInPt ) );
+
+		m_ui->m_left->setMaximum( 50 );
+		m_ui->m_right->setMaximum( 50 );
+		m_ui->m_top->setMaximum( 50 );
+		m_ui->m_bottom->setMaximum( 50 );
 	}
 	else
 	{
-		m_ui->m_left->setValue( m_ui->m_left->value() / c_mmPtConvert );
-		m_ui->m_right->setValue( m_ui->m_right->value() / c_mmPtConvert );
-		m_ui->m_top->setValue( m_ui->m_top->value() / c_mmPtConvert );
-		m_ui->m_bottom->setValue( m_ui->m_bottom->value() / c_mmPtConvert );
+		m_ui->m_left->setMaximum( qRound( 50 / c_mmInPt ) );
+		m_ui->m_right->setMaximum( qRound( 50 / c_mmInPt ) );
+		m_ui->m_top->setMaximum( qRound( 50 / c_mmInPt ) );
+		m_ui->m_bottom->setMaximum( qRound( 50 / c_mmInPt ) );
+
+		m_ui->m_left->setValue( qRound( m_ui->m_left->value() / c_mmInPt ) );
+		m_ui->m_right->setValue( qRound( m_ui->m_right->value() / c_mmInPt ) );
+		m_ui->m_top->setValue( qRound( m_ui->m_top->value() / c_mmInPt ) );
+		m_ui->m_bottom->setValue( qRound( m_ui->m_bottom->value() / c_mmInPt ) );
 	}
 }
