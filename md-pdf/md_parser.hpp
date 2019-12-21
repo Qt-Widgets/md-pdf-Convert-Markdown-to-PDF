@@ -117,6 +117,8 @@ private:
 
 		auto line = stream.readLine();
 
+		bool searchEndFromBegining = commentFound;
+
 		auto cs = line.indexOf( c_startComment );
 
 		if( !commentFound && cs > -1 )
@@ -127,7 +129,10 @@ private:
 
 		while( commentFound && !stream.atEnd() )
 		{
-			auto ce = line.indexOf( c_endComment );
+			auto ce = line.indexOf( c_endComment,
+				( searchEndFromBegining ? 0 : cs + c_startComment.length() ) );
+
+			searchEndFromBegining = false;
 
 			if( ce > -1 )
 			{
