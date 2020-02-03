@@ -47,4 +47,6 @@ If you will have problems with characters in PDF on your system, try to choose a
 font. Not all fonts are supported that supported by Qt, not all fonts have full list
 of Unicode characters needed by your Markdown. Just play with fonts comboboxes in the GUI.
 
-Thank you!
+# Screenshot
+
+![](mdpdf.png)
